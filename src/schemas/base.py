@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator
 
 
 class MapEntity(BaseModel):
+    '''Map  Entity BaseModel'''
     name: str
 
     @field_validator("name")
