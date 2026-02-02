@@ -1,27 +1,10 @@
-from typing import Optional, Literal
-from pydantic import Field, model_validator
-from .base import AppBaseModel
-from . import validators
+from enum import Enum
 
-class Map(AppBaseModel):
-    """Model class for input data validation"""
-    nb_drones: int = Field(ge=1)
-    end_hub_name: str
-    end_hub_name: str
-    '''
-    nb_drones: 5
 
-    start_hub: hub 0 0 [color=green]
-    end_hub: goal 10 10 [color=yellow]
-    hub: roof1 3 4 [zone=restricted color=red]
-    hub: roof2 6 2 [zone=normal color=blue]
-    hub: corridorA 4 3 [zone=priority color=green max_drones=2]
-    hub: tunnelB 7 4 [zone=normal color=red]
-    hub: obstacleX 5 5 [zone=blocked color=gray]
-    connection: hub-roof1
-    connection: hub-corridorA
-    connection: roof1-roof2
-    connection: roof2-goal
-    connection: corridorA-tunnelB [max_link_capacity=2]
-    connection: tunnelB-goal
-    '''
+class ZoneType(str, Enum):
+    """Allowed areas"""
+
+    NORMAL = "normal"
+    BLOCKED = "blocked"
+    RESTRICTED = "restricted"
+    PRIORITY = "priority"
