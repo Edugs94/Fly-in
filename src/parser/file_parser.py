@@ -103,4 +103,24 @@ class FileParser:
             )
             sys.exit(1)
 
+        for node in self.simulation_map.graph:
+            neighbors = self.simulation_map.graph[node]
+            for target in neighbors:
+                target_hub = self.simulation_map.hubs[target]
+                self.simulation_map.graph[node][target] = self.simulation_map.graph[node][target].copy()
+
+                if target_hub.zone.value == "blocked":
+                    self.simulation_map.graph[node][target]['cost'] = float('inf')
+
+                elif target_hub.zone.value == "restricted":
+                    self.simulation_map.graph[node][target]['cost'] = 2
+                    self.simulation_map.graph[node][target]['turns'] = 2
+
+                elif target_hub.zone.value == "priority":
+                    self.simulation_map.graph[node][target]['cost'] = 0
+
+                else:
+                    self.simulation_map.graph[node][target]['cost'] = 1
+                    self.simulation_map.graph[node][target]['turns'] = 1
+
         return self.simulation_map
