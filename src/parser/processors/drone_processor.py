@@ -1,11 +1,14 @@
-from src.parser.processors.base import LineProcessor
+from src.parser.processors.base_processor import LineProcessor
 from src.schemas.simulation_map import SimulationMap
 
 
 class DroneProcessor(LineProcessor):
     """Calculates the number of drones"""
 
-    def process(self, data: list[str], current_map: SimulationMap) -> None:
+    def _validate_name(self, data: list[str]) -> None:
+        pass
+
+    def _do_process(self, data: list[str], current_map: SimulationMap) -> None:
 
         if len(data) != 1:
             raise ValueError("Incorrect number of drones")

@@ -8,3 +8,4 @@ class Connection(MapEntity):
     source: str
     target: str
     max_link_capacity: int = Field(ge=1, default=1)
+    length: int = Field(default=1)

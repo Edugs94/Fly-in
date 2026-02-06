@@ -1,8 +1,5 @@
-from src.parser.processors.base import LineProcessor
+from src.parser.processors.base_processor import LineProcessor
 from src.schemas.simulation_map import SimulationMap
-from pydantic import ValidationError
-from src.schemas.connection import Connection
-from typing import Any
 
 
 class ConnectionProcessor(LineProcessor):
@@ -10,10 +7,16 @@ class ConnectionProcessor(LineProcessor):
 
     ALLOWED_KEYS = {"max_link_capacity"}
 
-    def process(self, data: list[str], current_map: SimulationMap) -> None:
+    def _validate_name(self, data: list[str]) -> None:
+        if not data:
+            raise ValueError("Invalid Map Entinty empty name")
+        if " " in data[0]:
+            raise ValueError(f"Invalid name '{data[0]} cannot contain spaces")
+
+    def _do_process(self, data: list[str], current_map: SimulationMap) -> None:
 
         if current_map.nb_drones == 0:
-            raise ValueError("Drone number must be defined in the first line")
+            raise ValueError("Drones number must be defined in the first line")
 
         if len(data) < 1:
             raise ValueError("Missing connection data")
@@ -37,27 +40,26 @@ class ConnectionProcessor(LineProcessor):
                 "Both source and target names are required."
             )
 
-        forward_link = f"{source}-{target}"
-        backward_link = f"{target}-{source}"
+        valid_hub_names = current_map.hubs.keys()
 
-        if (
-            forward_link in current_map.connections
-            or backward_link in current_map.connections
-        ):
+        if source not in valid_hub_names:
+            raise ValueError(
+                f"Error creating connection {data[0]}: "
+                f"Hub '{source}' is not defined (or not defined yet)."
+            )
+
+        if target not in valid_hub_names:
+            raise ValueError(
+                f"Error creating connection {data[0]}: "
+                f"Hub '{target}' is not defined (or not defined yet)."
+            )
+
+        if source in current_map.graph and target in current_map.graph[source]:
             raise ValueError(
                 f"Connection between '{source}' and '{target}' already exists"
             )
 
-        conn_params: dict[str, Any] = {
-            "name": forward_link,
-            "source": source,
-            "target": target,
-        }
-        reverse_params: dict[str, Any] = {
-            "name": backward_link,
-            "source": target,
-            "target": source,
-        }
+        conn_attributes = {"max_link_capacity": 1, "cost": 1, "turns": 1}
 
         if len(data) == 2:
             opt_str = data[1]
@@ -82,13 +84,12 @@ class ConnectionProcessor(LineProcessor):
                             f"Unknown parameter '{key}'. "
                             f"Allowed: {self.ALLOWED_KEYS}"
                         )
-                    conn_params[key] = int(value)
+                    conn_attributes[key] = int(value)
 
-        try:
-            new_connection = Connection(**conn_params)
-            reverse_connection = Connection(**reverse_params)
-        except ValidationError as e:
-            raise ValueError(f"Connection validation failed: {e}")
+        if source not in current_map.graph:
+            current_map.graph[source] = {}
+        if target not in current_map.graph:
+            current_map.graph[target] = {}
 
-        current_map.connections.append(new_connection)
-        current_map.connections.append(reverse_connection)
+        current_map.graph[source][target] = conn_attributes
+        current_map.graph[target][source] = conn_attributes

@@ -1,6 +1,7 @@
-from src.parser.processors.base import LineProcessor
+from src.parser.processors.base_processor import LineProcessor
 from src.schemas.simulation_map import SimulationMap
 from src.schemas.hubs import Hub
+from src.schemas.definitions import ZoneType, NodeCategory
 from pydantic import ValidationError
 from typing import Any
 
@@ -10,21 +11,37 @@ class HubProcessor(LineProcessor):
 
     ALLOWED_KEYS = {"zone", "color", "max_drones"}
 
-    def process(self, data: list[str], current_map: SimulationMap) -> None:
+    def __init__(
+        self, category: NodeCategory = NodeCategory.INTERMEDIATE
+    ) -> None:
+        """Initializes the processor with a specific node category."""
+        self.category = category
+
+    def _do_process(self, data: list[str], current_map: SimulationMap) -> None:
 
         if current_map.nb_drones == 0:
-            raise ValueError("Drone number must be defined in the first line")
+            raise ValueError("Drones number must be defined in the first line")
 
         if len(data) < 3:
             raise ValueError("Missing Hub mandatory parameters")
 
-        if data[0].strip() in current_map.hubs:
-            raise ValueError(f"Hub name '{data[0]}' is duplicated")
+        name = data[0].strip()
+
+        if name in current_map.hubs:
+            raise ValueError(f"Hub name '{name}' is duplicated")
+
+        if self.category in (NodeCategory.START, NodeCategory.END):
+            for hub in current_map.hubs.values():
+                if hub.category == self.category:
+                    cat = self.category.value.capitalize()
+                    raise ValueError(f"{cat} Hub is duplicated")
 
         hub_params: dict[str, Any] = {
-            "name": data[0].strip(),
+            "name": name,
             "x": int(data[1]),
             "y": int(data[2]),
+            "category": self.category,
+            "type": ZoneType.NORMAL,
         }
 
         if len(data) == 4:
@@ -54,9 +71,13 @@ class HubProcessor(LineProcessor):
 
                     hub_params[key] = value
 
+        if self.category in (NodeCategory.START, NodeCategory.END):
+            if "max_drones" not in hub_params:
+                hub_params["max_drones"] = current_map.nb_drones
+
         try:
             new_hub = Hub(**hub_params)
         except ValidationError as e:
             raise ValueError(f"Hub validation failed: {e}")
 
-        current_map.hubs[new_hub.name] = new_hub
+        current_map.hubs[name] = new_hub
