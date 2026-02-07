@@ -61,6 +61,9 @@ class ConnectionProcessor(LineProcessor):
 
         conn_attributes = {"max_link_capacity": 1, "cost": 1, "turns": 1}
 
+        if len(data) > 2:
+            raise ValueError("Invalid format. Spaces are not allowed "
+                             "inside parameters or brackets.")
         if len(data) == 2:
             opt_str = data[1]
 
@@ -86,6 +89,8 @@ class ConnectionProcessor(LineProcessor):
                         )
                     conn_attributes[key] = int(value)
 
+        if conn_attributes['max_link_capacity'] <= 0:
+            raise ValueError("Connection link capacity must be greater than 0")
         if source not in current_map.graph:
             current_map.graph[source] = {}
         if target not in current_map.graph:

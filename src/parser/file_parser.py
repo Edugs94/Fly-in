@@ -29,18 +29,20 @@ class FileParser:
         """Reads, processes the file and validates map completeness."""
         try:
             with open(filename, "r") as f:
+                empty_file = True
                 for line_num, line in enumerate(f, start=1):
                     line = line.strip()
 
                     if not line or line.startswith("#"):
                         continue
 
+                    empty_file = False
                     if ":" not in line:
                         print(
                             f"[ERROR] Line {line_num}: Missing ':' separator.",
                             file=sys.stderr,
                         )
-                        continue
+                        sys.exit(1)
 
                     key, content = line.split(":", 1)
                     key = key.strip().lower()
@@ -54,7 +56,7 @@ class FileParser:
                             f"entity type '{key}'.",
                             file=sys.stderr,
                         )
-                        continue
+                        sys.exit(1)
 
                     try:
                         processor.process(data, self.simulation_map)
@@ -79,15 +81,18 @@ class FileParser:
             elif hub.category == NodeCategory.END:
                 end_hub = hub
 
-        if start_hub is None:
+        if empty_file is True:
+            print("[ERROR] Empty file.", file=sys.stderr)
+            sys.exit(1)
+        elif start_hub is None:
             print("[ERROR] Map is missing a Start Hub.", file=sys.stderr)
             sys.exit(1)
 
-        if end_hub is None:
+        elif end_hub is None:
             print("[ERROR] Map is missing an End Hub.", file=sys.stderr)
             sys.exit(1)
 
-        if start_hub.max_drones > self.simulation_map.nb_drones:
+        elif start_hub.max_drones > self.simulation_map.nb_drones:
             print(
                 "[ERROR] Start Hub max capacity lower than "
                 "the drones number on simulation",
@@ -95,7 +100,7 @@ class FileParser:
             )
             sys.exit(1)
 
-        if end_hub.max_drones > self.simulation_map.nb_drones:
+        elif end_hub.max_drones > self.simulation_map.nb_drones:
             print(
                 "[ERROR] End Hub max capacity lower than "
                 "the drones number on simulation",
@@ -107,20 +112,24 @@ class FileParser:
             neighbors = self.simulation_map.graph[node]
             for target in neighbors:
                 target_hub = self.simulation_map.hubs[target]
-                self.simulation_map.graph[node][target] = self.simulation_map.graph[node][target].copy()
+                self.simulation_map.graph[node][target] = (
+                    self.simulation_map.graph[node][target].copy()
+                )
 
                 if target_hub.zone.value == "blocked":
-                    self.simulation_map.graph[node][target]['cost'] = float('inf')
+                    self.simulation_map.graph[node][target]["cost"] = float(
+                        "inf"
+                    )
 
                 elif target_hub.zone.value == "restricted":
-                    self.simulation_map.graph[node][target]['cost'] = 2
-                    self.simulation_map.graph[node][target]['turns'] = 2
+                    self.simulation_map.graph[node][target]["cost"] = 2
+                    self.simulation_map.graph[node][target]["turns"] = 2
 
                 elif target_hub.zone.value == "priority":
-                    self.simulation_map.graph[node][target]['cost'] = 0
+                    self.simulation_map.graph[node][target]["cost"] = 0
 
                 else:
-                    self.simulation_map.graph[node][target]['cost'] = 1
-                    self.simulation_map.graph[node][target]['turns'] = 1
+                    self.simulation_map.graph[node][target]["cost"] = 1
+                    self.simulation_map.graph[node][target]["turns"] = 1
 
         return self.simulation_map

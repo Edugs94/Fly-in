@@ -36,6 +36,10 @@ class HubProcessor(LineProcessor):
                     cat = self.category.value.capitalize()
                     raise ValueError(f"{cat} Hub is duplicated")
 
+        for hub in current_map.hubs.values():
+            if hub.x == int(data[1]) and hub.y == int(data[2]):
+                raise ValueError("Hub coordinates duplicated")
+
         hub_params: dict[str, Any] = {
             "name": name,
             "x": int(data[1]),
@@ -74,10 +78,14 @@ class HubProcessor(LineProcessor):
         if self.category in (NodeCategory.START, NodeCategory.END):
             if "max_drones" not in hub_params:
                 hub_params["max_drones"] = current_map.nb_drones
+            if int(hub_params["max_drones"]) < current_map.nb_drones:
+                raise ValueError(f"{self.category.name.capitalize()} Hub "
+                                 "capacity must be equal or greater than"
+                                 f" {current_map.nb_drones}")
 
         try:
             new_hub = Hub(**hub_params)
         except ValidationError as e:
-            raise ValueError(f"Hub validation failed: {e}")
+            raise ValueError(f"Hub validation failed. {e.errors()[0]['msg']}")
 
         current_map.hubs[name] = new_hub
