@@ -11,5 +11,6 @@ class Hub(MapEntity):
     x: int
     y: int
     max_drones: int = Field(ge=1, default=1)
+    current_drones: int = Field(ge=0, default=0)
     zone: ZoneType = Field(default=ZoneType.NORMAL)
     color: str | None = Field(default=None)

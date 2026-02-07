@@ -78,6 +78,7 @@ class FileParser:
         for hub in self.simulation_map.hubs.values():
             if hub.category == NodeCategory.START:
                 start_hub = hub
+                start_hub.current_drones = self.simulation_map.nb_drones
             elif hub.category == NodeCategory.END:
                 end_hub = hub
 
@@ -123,13 +124,8 @@ class FileParser:
 
                 elif target_hub.zone.value == "restricted":
                     self.simulation_map.graph[node][target]["cost"] = 2
-                    self.simulation_map.graph[node][target]["turns"] = 2
-
-                elif target_hub.zone.value == "priority":
-                    self.simulation_map.graph[node][target]["cost"] = 0
 
                 else:
                     self.simulation_map.graph[node][target]["cost"] = 1
-                    self.simulation_map.graph[node][target]["turns"] = 1
 
         return self.simulation_map

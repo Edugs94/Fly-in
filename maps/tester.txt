@@ -1,5 +1,5 @@
 nb_drones: 5
 start_hub: start 0 0
 end_hub: goal 1 1
-hub: roof1 1 2
+hub: roof1 1 2 [color=green]
 connection: start-roof1 [max_link_capacity=1]
