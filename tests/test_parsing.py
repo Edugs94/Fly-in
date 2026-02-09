@@ -20,9 +20,8 @@ def test_parser_success_valid_map(tmp_path):
     assert simulation.nb_drones == 2
     assert "start" in simulation.hubs
     assert simulation.hubs["start"].category == NodeCategory.START
-    assert "start" in simulation.graph
-    assert "waypoint1" in simulation.graph["start"]
-    assert simulation.graph["start"]["waypoint1"]["cost"] == 1
+    assert "start" in simulation.connections
+    assert "waypoint1" in simulation.connections["start"]
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -415,8 +414,10 @@ def test_unknown_type_zone(capsys, tmp_path):
     d_file.write_text(content, encoding="utf-8")
 
     parser = FileParser()
-    expected_error = ("Hub validation failed. Input should be 'normal',"
-                      " 'blocked', 'restricted' or 'priority'")
+    expected_error = (
+        "Hub validation failed. Input should be 'normal',"
+        " 'blocked', 'restricted' or 'priority'"
+    )
 
     with pytest.raises(SystemExit):
         parser.parse(str(d_file))
@@ -549,6 +550,7 @@ def test_wrong_metadata4(capsys, tmp_path):
 #                                   CONNECTIONS
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
 def test_undefined_hub(capsys, tmp_path):
     content = """nb_drones: 5
                 start_hub: start 0 0
@@ -559,7 +561,7 @@ def test_undefined_hub(capsys, tmp_path):
     d_file.write_text(content, encoding="utf-8")
 
     parser = FileParser()
-    expected_error = "Error creating connection"
+    expected_error = "is not defined"
 
     with pytest.raises(SystemExit):
         parser.parse(str(d_file))
@@ -580,7 +582,7 @@ def test_undefined_hub2(capsys, tmp_path):
     d_file.write_text(content, encoding="utf-8")
 
     parser = FileParser()
-    expected_error = "Error creating connection"
+    expected_error = "is not defined"
 
     with pytest.raises(SystemExit):
         parser.parse(str(d_file))
@@ -741,7 +743,7 @@ def test_invalid_metadata4(capsys, tmp_path):
     d_file.write_text(content, encoding="utf-8")
 
     parser = FileParser()
-    expected_error = "invalid literal for int"
+    expected_error = "Value for 'max_link_capacity' must be an integer"
 
     with pytest.raises(SystemExit):
         parser.parse(str(d_file))
@@ -761,7 +763,7 @@ def test_invalid_metadata5(capsys, tmp_path):
     d_file.write_text(content, encoding="utf-8")
 
     parser = FileParser()
-    expected_error = "Connection link capacity must be greater than 0"
+    expected_error = "Connection validation failed"
 
     with pytest.raises(SystemExit):
         parser.parse(str(d_file))
@@ -801,7 +803,7 @@ def test_invalid_metadata7(capsys, tmp_path):
     d_file.write_text(content, encoding="utf-8")
 
     parser = FileParser()
-    expected_error = "invalid literal for int"
+    expected_error = "Value for 'max_link_capacity' must be an intege"
 
     with pytest.raises(SystemExit):
         parser.parse(str(d_file))

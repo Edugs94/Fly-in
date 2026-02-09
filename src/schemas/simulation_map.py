@@ -8,4 +8,4 @@ class SimulationMap(BaseModel):
     nb_drones: int
 
     hubs: dict[str, Any]
-    graph: dict[str, Any]
+    connections: dict[str, Any]

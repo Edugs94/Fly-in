@@ -14,7 +14,7 @@ class FileParser:
         self.simulation_map = SimulationMap(
             nb_drones=0,
             hubs={},
-            graph={},
+            connections={},
         )
 
         self.processors = {
@@ -108,24 +108,5 @@ class FileParser:
                 file=sys.stderr,
             )
             sys.exit(1)
-
-        for node in self.simulation_map.graph:
-            neighbors = self.simulation_map.graph[node]
-            for target in neighbors:
-                target_hub = self.simulation_map.hubs[target]
-                self.simulation_map.graph[node][target] = (
-                    self.simulation_map.graph[node][target].copy()
-                )
-
-                if target_hub.zone.value == "blocked":
-                    self.simulation_map.graph[node][target]["cost"] = float(
-                        "inf"
-                    )
-
-                elif target_hub.zone.value == "restricted":
-                    self.simulation_map.graph[node][target]["cost"] = 2
-
-                else:
-                    self.simulation_map.graph[node][target]["cost"] = 1
 
         return self.simulation_map

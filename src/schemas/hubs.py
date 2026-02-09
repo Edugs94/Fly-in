@@ -6,6 +6,7 @@ from src.schemas.definitions import ZoneType, NodeCategory
 class Hub(MapEntity):
     """Hub Class Validation"""
 
+    name: str
     category: NodeCategory
     type: ZoneType
     x: int
