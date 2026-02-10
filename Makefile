@@ -4,7 +4,7 @@ PYTHON = $(VENV_NAME)/bin/python3
 PIP = $(VENV_NAME)/bin/pip
 
 MAIN_FILE = main.py
-CONFIG_FILE = maps/hard/01_maze_nightmare.txt
+CONFIG_FILE = maps/easy/03_basic_capacity.txt
 REQ_FILE = requirements.txt
 
 all: install run

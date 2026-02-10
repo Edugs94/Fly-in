@@ -1,5 +1,6 @@
 from __future__ import annotations
 from src.schemas.hubs import Hub
+from src.schemas.definitions import ZoneType
 
 
 class TimeNode:
@@ -10,6 +11,7 @@ class TimeNode:
     def __init__(self, hub: Hub, time: int):
         self.hub = hub
         self.time = time
+        self.is_priority = (self.hub.zone == ZoneType.PRIORITY)
 
     def __eq__(self, other: object) -> bool:
         """
@@ -59,6 +61,6 @@ class TimeEdge:
 
     def add_drones(self, amount: int = 1) -> bool:
         """
-        Docstring for adding drones to the Edge
+        Adding drones to the Edge
         """
         return self.tracker.add_flow(amount)
