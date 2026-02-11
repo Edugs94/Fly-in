@@ -1,66 +1,62 @@
 from __future__ import annotations
 from src.schemas.hubs import Hub
-from src.schemas.definitions import ZoneType
+from src.schemas.definitions import ZoneType, NodeCategory
 
+
+class EdgeTracker:
+    def __init__(self) -> None:
+        self.edge_tracker: dict[tuple[TimeEdge, int], int] = {}
 
 class TimeNode:
     """
-    Represents a specific Hub at a specific simulation turn (t).
+    Represents a specific physical Hub at a specific simulation time step.
     """
 
-    def __init__(self, hub: Hub, time: int):
-        self.hub = hub
-        self.time = time
-        self.is_priority = (self.hub.zone == ZoneType.PRIORITY)
+    def __init__(self, hub: Hub, time: int) -> None:
+        self.hub: Hub = hub
+        self.time: int = time
+        self.is_priority: bool = self.hub.zone == ZoneType.PRIORITY
+        self.is_end: bool = hub.category == NodeCategory.END
 
     def __eq__(self, other: object) -> bool:
-        """
-        Checks equality based on hub name and time.
-        """
         if isinstance(other, TimeNode):
             return self.hub.name == other.hub.name and self.time == other.time
         return False
 
     def __hash__(self) -> int:
-        """
-        Generates a unique hash for using this object as a dictionary key.
-        """
         return hash((self.hub.name, self.time))
 
-
-class CapacityTracker:
-    '''
-    Tracker for capacity of each TimeEdge
-    '''
-    def __init__(self, max_link_capacity: int, current_drones: int) -> None:
-        self.max_link_capacity = max_link_capacity
-        self.current_drones = current_drones
-
-    def add_flow(self, amount) -> bool:
-        if self.max_link_capacity >= amount + self.current_drones:
-            self.current_drones += amount
-            return True
-        else:
-            return False
+    def __repr__(self) -> str:
+        return f"TimeNode({self.hub.name}, t={self.time})"
 
 
 class TimeEdge:
     """
-    Representation an Edge on the Time-Expanded Graph
+    Represents a directed edge between two TimeNodes in the Time-Expanded Graph.
     """
 
-    def __init__(
-        self, source: TimeNode, target: TimeNode, tracker: CapacityTracker
-    ) -> None:
-        """
-        Docstring for __init__
-        """
+    def __init__(self, source: TimeNode, target: TimeNode, max_capacity: int = 1) -> None:
         self.source = source
         self.target = target
-        self.tracker = tracker
+        self.duration = target.time - source.time
+        self.max_capacity = max_capacity
 
-    def add_drones(self, amount: int = 1) -> bool:
+    def __hash__(self) -> int:
+        return hash((self.source , self.target))
+
+    def use_edge(self, tracker: EdgeTracker) -> None:
         """
-        Adding drones to the Edge
+        Registers the occupation of this edge.
         """
-        return self.tracker.add_flow(amount)
+        for turn in range(self.duration):
+            tracker.edge_tracker[(self, self.source.time + turn)] += 1
+
+    def is_traversable(self, tracker: EdgeTracker) -> bool:
+        """
+        Checks if the physical edge has sufficient capacity for the entire duration of the traversal.
+        """
+        for turn in range(self.duration):
+            current_occupation = tracker.edge_tracker.get((self, self.source.time + turn), 0)
+            if current_occupation >= self.max_capacity:
+                return False
+        return True

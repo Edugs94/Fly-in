@@ -1,85 +1,81 @@
-from src.solver.models import TimeNode, TimeEdge, CapacityTracker
-from src.schemas.simulation_map import SimulationMap
+from __future__ import annotations
+from typing import Dict, List, Tuple
 from src.schemas.hubs import Hub
+from src.schemas.simulation_map import SimulationMap
 from src.schemas.definitions import ZoneType
-from typing import Any
+from src.solver.models import TimeNode, TimeEdge
 
 
 class TimeGraph:
-    def __init__(self, turns: int) -> None:
+    """
+    Constructs and manages the Time-Expanded Graph by connecting nodes across time steps.
+    """
+
+    def __init__(self, max_time: int) -> None:
+        self.max_time = max_time
+        self.nodes: Dict[Tuple[str, int], TimeNode] = {}
+        self.edges: List[TimeEdge] = []
+
+    def _add_node(self, hub: Hub, turn: int) -> None:
         """
-        Init for creation of Time Expanded Graph
+        Creates and stores a TimeNode if it does not already exist.
         """
-        self.adjacency: dict[TimeNode, list[TimeEdge]] = {}
-        self.physical_trackers = {}
-        self.turns: int = turns
+        key = (hub.name, turn)
+        if key not in self.nodes and hub.zone != ZoneType.BLOCKED:
+            self.nodes[key] = TimeNode(hub, turn)
 
-    def _create_nodes(self, simulation_map: SimulationMap) -> None:
-        """Gets all nodes from simulation map, creates
-        their respective TimeNodes and stores them in a dictionary"""
-        for i in range(self.turns + 1):
-            for hub in simulation_map.hubs.values():
-                if hub.zone != ZoneType.BLOCKED:
-                    new_time_node = TimeNode(hub, i)
-                    self.adjacency[new_time_node] = []
-
-    def _get_physical_tracker(
-        self, source_name: str, target_name: str, capacity: int
-    ) -> CapacityTracker:
+    def _add_edge(self, source: TimeNode, target: TimeNode, max_capacity: int = 1) -> None:
         """
-        Helper to get/create a shared tracker for a physical connection.
-        Uses sorted() so A->B and B->A share the same instance.
+        Creates a TimeEdge between two TimeNodes and stores it in the edge list.
         """
-        link_key = tuple(sorted((source_name, target_name)))
+        new_edge = TimeEdge(source, target, max_capacity)
+        self.edges.append(new_edge)
 
-        if link_key not in self.physical_trackers:
-            self.physical_trackers[link_key] = CapacityTracker(
-                max_link_capacity=capacity, current_drones=0
-            )
+    def _get_travel_time(self, target_hub: Hub) -> int:
+        """
+        Returns the travel time to reach a hub based on its zone type.
+        RESTRICTED zones take 2 turns, all others take 1 turn.
+        """
+        if target_hub.zone == ZoneType.RESTRICTED:
+            return 2
+        return 1
 
-        return self.physical_trackers[link_key]
+    def build_graph(self, hubs: list[Hub], connections: dict) -> None:
+        """
+        Populates the graph while excluding hubs and connections marked as BLOCKED.
+        RESTRICTED zones require 2 time steps to traverse.
+        """
+        valid_hubs = {
+            hub.name: hub for hub in hubs
+            if hub.zone != ZoneType.BLOCKED
+        }
 
-    def _create_edges(self, simulation_map: SimulationMap) -> None:
-        """Creates all conections between TimeNodes"""
-        for node in self.adjacency.keys():
-            if node.time != self.turns:
-                """Creation of the wait connection"""
-                wait_target = TimeNode(node.hub, node.time + 1)
+        for t in range(self.max_time + 1):
+            for hub in valid_hubs.values():
+                self._add_node(hub, t)
 
-                if wait_target in self.adjacency:
-                    wait_tracker = CapacityTracker(node.hub.max_drones, 0)
-                    wait_edge = TimeEdge(node, wait_target, wait_tracker)
-                    self.adjacency[node].append(wait_edge)
-
-                neighbors = simulation_map.connections.get(node.hub.name, {})
-                """Creation of the rest of connections"""
-                for target_name, connection in neighbors.items():
-
-                    arrival_time = node.time + connection.cost
-
-                    if arrival_time > self.turns:
+        for t in range(self.max_time):
+            for source_name, targets in connections.items():
+                for target_name, connection in targets.items():
+                    if source_name not in valid_hubs or target_name not in valid_hubs:
                         continue
 
-                    target_hub = simulation_map.hubs[target_name]
+                    target_hub = valid_hubs[target_name]
+                    travel_time = self._get_travel_time(target_hub)
+                    arrival_time = t + travel_time
 
-                    target_time_node = TimeNode(target_hub, arrival_time)
+                    if arrival_time > self.max_time:
+                        continue
 
-                    if target_time_node in self.adjacency:
+                    source_node = self.nodes.get((source_name, t))
+                    target_node = self.nodes.get((target_name, arrival_time))
 
-                        shared_tracker = self._get_physical_tracker(
-                            node.hub.name,
-                            target_hub.name,
-                            connection.max_link_capacity,
-                        )
+                    if source_node and target_node:
+                        self._add_edge(source_node, target_node, connection.max_link_capacity)
 
-                        move_edge = TimeEdge(
-                            node, target_time_node, shared_tracker
-                        )
-                        self.adjacency[node].append(move_edge)
+            for hub in valid_hubs.values():
+                wait_source = self.nodes.get((hub.name, t))
+                wait_target = self.nodes.get((hub.name, t + 1))
 
-    def build(self, simulation_map: SimulationMap) -> None:
-        """
-        Main method to build the time expansion graph.
-        """
-        self._create_nodes(simulation_map)
-        self._create_edges(simulation_map)
+                if wait_source and wait_target:
+                    self._add_edge(wait_source, wait_target)
