@@ -7,7 +7,6 @@ all: install
 
 $(VENV_NAME):
 	python3 -m venv $(VENV_NAME)
-	# Es buena práctica actualizar pip inmediatamente después de crear el venv
 	$(PIP) install --upgrade pip
 
 install: $(VENV_NAME)

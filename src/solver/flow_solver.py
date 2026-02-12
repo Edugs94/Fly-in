@@ -32,7 +32,7 @@ class FlowSolver:
 
     def find_start_node(self) -> TimeNode:
         """Returns the TimeNode at time=0 that is the START hub."""
-        for node in self.time_graph.nodes.values():
+        for node in self.time_graph.nodes:
             if node.time == 0 and node.hub.category == NodeCategory.START:
                 return node
         raise ValueError("No START node found at time=0")
@@ -142,6 +142,13 @@ class FlowSolver:
 
         for node in path:
             node.add_drone()
+
+        end_node = path[-1]
+        if end_node.hub.category == NodeCategory.END:
+            for t in range(end_node.time + 1, self.time_graph.max_time + 1):
+                future_end = self.time_graph.get_node(end_node.hub.name, t)
+                if future_end:
+                    future_end.add_drone()
 
     def _create_drones(self) -> None:
         """Creates Drone objects from solved paths."""

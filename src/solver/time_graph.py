@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Set
 from src.schemas.hubs import Hub
 from src.schemas.simulation_map import SimulationMap
-from src.schemas.definitions import ZoneType, NodeCategory
+from src.schemas.definitions import ZoneType
 from src.solver.models import TimeNode, TimeEdge
 
 
@@ -15,23 +15,27 @@ class TimeGraph:
 
     def __init__(self, simulation: SimulationMap, max_time: int) -> None:
         self.max_time = max_time
-        self.nodes: Dict[Tuple[str, int], TimeNode] = {}
+        self.nodes: Set[TimeNode] = set()
+        self._node_lookup: Dict[tuple[str, int], TimeNode] = {}
         self.edges: List[TimeEdge] = []
         self.simulation: SimulationMap = simulation
         self.adjacency: Dict[TimeNode, List[TimeEdge]] = {}
         self._build_graph()
 
+    def get_node(self, hub_name: str, time: int) -> Optional[TimeNode]:
+        """Returns the TimeNode for a given hub name and time, or None."""
+        return self._node_lookup.get((hub_name, time))
+
     def _add_node(self, hub: Hub, turn: int) -> None:
         """
         Creates and stores a TimeNode if it does not already exist.
-        START nodes at t=0 are initialized with nb_drones.
+        Drone counts are tracked via _reserve_path, not initialization.
         """
         key = (hub.name, turn)
-        if key not in self.nodes and hub.zone != ZoneType.BLOCKED:
-            initial_drones = 0
-            if hub.category == NodeCategory.START and turn == 0:
-                initial_drones = self.simulation.nb_drones
-            self.nodes[key] = TimeNode(hub, turn, initial_drones)
+        if key not in self._node_lookup and hub.zone != ZoneType.BLOCKED:
+            node = TimeNode(hub, turn, 0)
+            self.nodes.add(node)
+            self._node_lookup[key] = node
 
     def _add_edge(
         self, source: TimeNode, target: TimeNode, max_capacity: int = 1
@@ -86,8 +90,8 @@ class TimeGraph:
                     if arrival_time > self.max_time:
                         continue
 
-                    source_node = self.nodes.get((source_name, t))
-                    target_node = self.nodes.get((target_name, arrival_time))
+                    source_node = self.get_node(source_name, t)
+                    target_node = self.get_node(target_name, arrival_time)
 
                     if source_node and target_node:
                         self._add_edge(
@@ -97,8 +101,8 @@ class TimeGraph:
                         )
 
             for hub in valid_hubs.values():
-                wait_source = self.nodes.get((hub.name, t))
-                wait_target = self.nodes.get((hub.name, t + 1))
+                wait_source = self.get_node(hub.name, t)
+                wait_target = self.get_node(hub.name, t + 1)
 
                 if wait_source and wait_target:
                     self._add_edge(
@@ -109,7 +113,7 @@ class TimeGraph:
 
     def _build_adjacency(self) -> None:
         """Builds the adjacency dictionary from the graph edges."""
-        self.adjacency = {node: [] for node in self.nodes.values()}
+        self.adjacency = {node: [] for node in self.nodes}
         for edge in self.edges:
             if edge.source in self.adjacency:
                 self.adjacency[edge.source].append(edge)
