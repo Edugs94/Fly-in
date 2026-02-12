@@ -56,12 +56,8 @@ class ConnectionProcessor(LineProcessor):
                 " already exists"
             )
 
-        conn_params = {
-            "source": source,
-            "target": target,
-            "max_link_capacity": 1,
-            "current_drones": 0,
-        }
+        max_link_capacity = 1
+        current_drones = 0
 
         if len(data) > 2:
             raise ValueError(
@@ -90,14 +86,23 @@ class ConnectionProcessor(LineProcessor):
                         )
 
                     try:
-                        conn_params[key] = int(value)
+                        int_value = int(value)
+                        if key == "max_link_capacity":
+                            max_link_capacity = int_value
+                        elif key == "current_drones":
+                            current_drones = int_value
                     except ValueError:
                         raise ValueError(
                             f"Value for '{key}' must be an integer"
                         )
 
         try:
-            new_connection = Connection(**conn_params)
+            new_connection = Connection(
+                source=source,
+                target=target,
+                max_link_capacity=max_link_capacity,
+                current_drones=current_drones,
+            )
         except ValidationError as e:
             raise ValueError(
                 f"Connection validation failed: {e.errors()[0]['msg']}"

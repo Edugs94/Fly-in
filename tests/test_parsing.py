@@ -1,9 +1,10 @@
 import pytest
+from pathlib import Path
 from src.parser.file_parser import FileParser
 from src.schemas.definitions import NodeCategory
 
 
-def test_parser_success_valid_map(tmp_path):
+def test_parser_success_valid_map(tmp_path: Path) -> None:
     content = """nb_drones: 2
                 start_hub: start 0 0
                 end_hub: end 10 10
@@ -29,7 +30,9 @@ def test_parser_success_valid_map(tmp_path):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-def test_file_not_found(capsys, tmp_path):
+def test_file_not_found(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     map_path = tmp_path / "non_existent_file.txt"
     parser = FileParser()
     expected_error = "No such file"
@@ -41,7 +44,9 @@ def test_file_not_found(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_empty_file(capsys, tmp_path):
+def test_empty_file(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = ""
     d_file = tmp_path / "empty.txt"
     d_file.write_text(content, encoding="utf-8")
@@ -56,7 +61,9 @@ def test_empty_file(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_missing_separator(capsys, tmp_path):
+def test_missing_separator(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub start 0 0
                 end_hub: goal 10 10
@@ -74,7 +81,9 @@ def test_missing_separator(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_garbage_variables1(capsys, tmp_path):
+def test_garbage_variables1(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_droes: 5
                 start_hub: hub 0 0
                 end_hub: goal 10 10
@@ -92,7 +101,9 @@ def test_garbage_variables1(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_garbage_variables2(capsys, tmp_path):
+def test_garbage_variables2(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: hub 0 0
                 end_hub: goal 10 10
@@ -116,7 +127,9 @@ def test_garbage_variables2(capsys, tmp_path):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-def test_wrong_order(capsys, tmp_path):
+def test_wrong_order(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """start_hub: hub 0 0
                 end_hub: goal 10 10
                 nb_drones: 5
@@ -134,7 +147,7 @@ def test_wrong_order(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_0_drones(capsys, tmp_path):
+def test_0_drones(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     content = """nb_drones: 0
                 start_hub: hub 0 0
                 end_hub: goal 10 10
@@ -152,7 +165,9 @@ def test_0_drones(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_missing_drones(capsys, tmp_path):
+def test_missing_drones(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """start_hub: hub 0 0
                 end_hub: goal 10 10
                 """
@@ -169,7 +184,9 @@ def test_missing_drones(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_non_numeric_drones(capsys, tmp_path):
+def test_non_numeric_drones(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: five
                 start_hub: hub 0 0
                 end_hub: goal 10 10
@@ -187,7 +204,9 @@ def test_non_numeric_drones(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_negative_drones(capsys, tmp_path):
+def test_negative_drones(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: -3
                 start_hub: hub 0 0
                 end_hub: goal 10 10
@@ -205,7 +224,9 @@ def test_negative_drones(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_duplicate_drones_line(capsys, tmp_path):
+def test_duplicate_drones_line(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 3
                 nb_drones: 3
                 start_hub: hub 0 0
@@ -229,7 +250,9 @@ def test_duplicate_drones_line(capsys, tmp_path):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-def test_missing_start(capsys, tmp_path):
+def test_missing_start(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 end_hub: goal 10 10
                 hub: roof1 3 4
@@ -247,7 +270,9 @@ def test_missing_start(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_missing_end(capsys, tmp_path):
+def test_missing_end(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 hub: roof1 3 4
@@ -265,7 +290,9 @@ def test_missing_end(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_duplicate_starts(capsys, tmp_path):
+def test_duplicate_starts(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 start_hub: alo 0 0
@@ -285,7 +312,9 @@ def test_duplicate_starts(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_duplicate_ends(capsys, tmp_path):
+def test_duplicate_ends(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 10 18
@@ -305,7 +334,9 @@ def test_duplicate_ends(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_name_format(capsys, tmp_path):
+def test_invalid_name_format(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 10 18
@@ -324,7 +355,9 @@ def test_invalid_name_format(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_name_format2(capsys, tmp_path):
+def test_invalid_name_format2(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal-1 10 18
@@ -343,7 +376,9 @@ def test_invalid_name_format2(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_missing_coordinates(capsys, tmp_path):
+def test_missing_coordinates(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -363,7 +398,9 @@ def test_missing_coordinates(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_string_coordinates(capsys, tmp_path):
+def test_string_coordinates(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -383,7 +420,9 @@ def test_string_coordinates(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_duplicated_coordinates(capsys, tmp_path):
+def test_duplicated_coordinates(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -403,7 +442,9 @@ def test_duplicated_coordinates(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_unknown_type_zone(capsys, tmp_path):
+def test_unknown_type_zone(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -426,7 +467,9 @@ def test_unknown_type_zone(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_capacity(capsys, tmp_path):
+def test_invalid_capacity(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0 [max_drones=3]
                 end_hub: goal 1 1
@@ -446,7 +489,9 @@ def test_invalid_capacity(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_capacity2(capsys, tmp_path):
+def test_invalid_capacity2(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -466,7 +511,9 @@ def test_invalid_capacity2(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_wrong_metadata1(capsys, tmp_path):
+def test_wrong_metadata1(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -486,7 +533,9 @@ def test_wrong_metadata1(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_wrong_metadata2(capsys, tmp_path):
+def test_wrong_metadata2(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -506,7 +555,9 @@ def test_wrong_metadata2(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_wrong_metadata3(capsys, tmp_path):
+def test_wrong_metadata3(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -526,7 +577,9 @@ def test_wrong_metadata3(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_wrong_metadata4(capsys, tmp_path):
+def test_wrong_metadata4(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -551,7 +604,9 @@ def test_wrong_metadata4(capsys, tmp_path):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-def test_undefined_hub(capsys, tmp_path):
+def test_undefined_hub(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -570,7 +625,9 @@ def test_undefined_hub(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_undefined_hub2(capsys, tmp_path):
+def test_undefined_hub2(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -591,7 +648,9 @@ def test_undefined_hub2(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_space_separator(capsys, tmp_path):
+def test_space_separator(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -611,7 +670,7 @@ def test_space_separator(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_extra_hub(capsys, tmp_path):
+def test_extra_hub(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -631,7 +690,7 @@ def test_extra_hub(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_self_loop(capsys, tmp_path):
+def test_self_loop(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -651,7 +710,9 @@ def test_self_loop(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_duplicate_connection(capsys, tmp_path):
+def test_duplicate_connection(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -672,7 +733,9 @@ def test_duplicate_connection(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_metadata(capsys, tmp_path):
+def test_invalid_metadata(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -692,7 +755,9 @@ def test_invalid_metadata(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_metadata2(capsys, tmp_path):
+def test_invalid_metadata2(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -712,7 +777,9 @@ def test_invalid_metadata2(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_metadata3(capsys, tmp_path):
+def test_invalid_metadata3(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -732,7 +799,9 @@ def test_invalid_metadata3(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_metadata4(capsys, tmp_path):
+def test_invalid_metadata4(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -752,7 +821,9 @@ def test_invalid_metadata4(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_metadata5(capsys, tmp_path):
+def test_invalid_metadata5(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -772,7 +843,9 @@ def test_invalid_metadata5(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_metadata6(capsys, tmp_path):
+def test_invalid_metadata6(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1
@@ -792,7 +865,9 @@ def test_invalid_metadata6(capsys, tmp_path):
     assert expected_error in captured.err
 
 
-def test_invalid_metadata7(capsys, tmp_path):
+def test_invalid_metadata7(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
     content = """nb_drones: 5
                 start_hub: start 0 0
                 end_hub: goal 1 1

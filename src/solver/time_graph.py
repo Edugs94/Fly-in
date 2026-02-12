@@ -2,31 +2,43 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 from src.schemas.hubs import Hub
 from src.schemas.simulation_map import SimulationMap
-from src.schemas.definitions import ZoneType
+from src.schemas.definitions import ZoneType, NodeCategory
 from src.solver.models import TimeNode, TimeEdge
 
 
 class TimeGraph:
     """
-    Constructs and manages the Time-Expanded Graph by connecting nodes across time steps.
+    Constructs and manages the Time-Expanded Graph by
+    connecting nodes across time steps.
+    Builds itself automatically upon instantiation.
     """
 
-    def __init__(self, max_time: int) -> None:
+    def __init__(self, simulation: SimulationMap, max_time: int) -> None:
         self.max_time = max_time
         self.nodes: Dict[Tuple[str, int], TimeNode] = {}
         self.edges: List[TimeEdge] = []
+        self.simulation: SimulationMap = simulation
+        self.adjacency: Dict[TimeNode, List[TimeEdge]] = {}
+        self._build_graph()
 
     def _add_node(self, hub: Hub, turn: int) -> None:
         """
         Creates and stores a TimeNode if it does not already exist.
+        START nodes at t=0 are initialized with nb_drones.
         """
         key = (hub.name, turn)
         if key not in self.nodes and hub.zone != ZoneType.BLOCKED:
-            self.nodes[key] = TimeNode(hub, turn)
+            initial_drones = 0
+            if hub.category == NodeCategory.START and turn == 0:
+                initial_drones = self.simulation.nb_drones
+            self.nodes[key] = TimeNode(hub, turn, initial_drones)
 
-    def _add_edge(self, source: TimeNode, target: TimeNode, max_capacity: int = 1) -> None:
+    def _add_edge(
+        self, source: TimeNode, target: TimeNode, max_capacity: int = 1
+    ) -> None:
         """
-        Creates a TimeEdge between two TimeNodes and stores it in the edge list.
+        Creates a TimeEdge between two TimeNodes
+        and stores it in the edge list.
         """
         new_edge = TimeEdge(source, target, max_capacity)
         self.edges.append(new_edge)
@@ -40,13 +52,17 @@ class TimeGraph:
             return 2
         return 1
 
-    def build_graph(self, hubs: list[Hub], connections: dict) -> None:
+    def _build_graph(self) -> None:
         """
-        Populates the graph while excluding hubs and connections marked as BLOCKED.
+        Populates the graph while excluding hubs
+        and connections marked as BLOCKED.
         RESTRICTED zones require 2 time steps to traverse.
+        Also builds the adjacency dictionary.
         """
-        valid_hubs = {
-            hub.name: hub for hub in hubs
+        hubs_dict = self.simulation.hubs
+        connections = self.simulation.connections
+        valid_hubs: Dict[str, Hub] = {
+            name: hub for name, hub in hubs_dict.items()
             if hub.zone != ZoneType.BLOCKED
         }
 
@@ -57,7 +73,10 @@ class TimeGraph:
         for t in range(self.max_time):
             for source_name, targets in connections.items():
                 for target_name, connection in targets.items():
-                    if source_name not in valid_hubs or target_name not in valid_hubs:
+                    if (
+                        source_name not in valid_hubs
+                        or target_name not in valid_hubs
+                    ):
                         continue
 
                     target_hub = valid_hubs[target_name]
@@ -71,11 +90,26 @@ class TimeGraph:
                     target_node = self.nodes.get((target_name, arrival_time))
 
                     if source_node and target_node:
-                        self._add_edge(source_node, target_node, connection.max_link_capacity)
+                        self._add_edge(
+                            source_node,
+                            target_node,
+                            connection.max_link_capacity,
+                        )
 
             for hub in valid_hubs.values():
                 wait_source = self.nodes.get((hub.name, t))
                 wait_target = self.nodes.get((hub.name, t + 1))
 
                 if wait_source and wait_target:
-                    self._add_edge(wait_source, wait_target)
+                    self._add_edge(
+                        wait_source, wait_target, wait_source.hub.max_drones
+                    )
+
+        self._build_adjacency()
+
+    def _build_adjacency(self) -> None:
+        """Builds the adjacency dictionary from the graph edges."""
+        self.adjacency = {node: [] for node in self.nodes.values()}
+        for edge in self.edges:
+            if edge.source in self.adjacency:
+                self.adjacency[edge.source].append(edge)

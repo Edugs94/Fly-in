@@ -2,34 +2,30 @@ import sys
 from src.parser.file_parser import FileParser
 from src.solver.time_graph import TimeGraph
 from src.solver.flow_solver import FlowSolver
+from src.solver.time_estimator import estimate_max_time, has_path_to_end
+from src.schemas.simulation_map import SimulationMap
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python3 main_solver.py <map_file.txt> [max_time]")
+        print("Usage: python3 main_solver.py <map_file.txt>", file=sys.stderr)
         sys.exit(1)
 
     map_file = sys.argv[1]
-    max_time = int(sys.argv[2]) if len(sys.argv) > 2 else 10
 
     parser = FileParser()
-    simulation = parser.parse(map_file)
+    simulation: SimulationMap = parser.parse(map_file)
 
-    print(f"Map: {map_file}")
-    print(f"Number of drones: {simulation.nb_drones}")
-    print(f"Max time: {max_time}")
+    if not has_path_to_end(simulation):
+        print("ERROR: No path exists from START to END", file=sys.stderr)
+        sys.exit(1)
 
-    tg = TimeGraph(max_time=max_time)
-    hubs_list = simulation.hubs.values() if isinstance(simulation.hubs, dict) else simulation.hubs
-    tg.build_graph(hubs_list, simulation.connections)
-
-    print(f"\nTimeGraph built: {len(tg.nodes)} nodes, {len(tg.edges)} edges")
-
-    solver = FlowSolver(tg, simulation.nb_drones)
+    max_turns = estimate_max_time(simulation)
+    time_graph = TimeGraph(simulation, max_turns)
+    solver = FlowSolver(time_graph, simulation.nb_drones)
     solver.solve_all_drones()
 
-    solver.print_movements()
-    solver.print_summary()
+    solver.print_simulation_output()
 
 
 if __name__ == "__main__":
