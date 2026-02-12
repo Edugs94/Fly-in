@@ -70,7 +70,7 @@ Notice how:
 - Each hub appears once per time step
 - **Horizontal edges** are "wait" operations (staying at the same hub)
 - **Diagonal edges** are movements between hubs
-- Restricted zones would take 2 time steps
+- Restricted zones would take 2 time steps in case they exist
 - The graph structure cleanly handles all temporal dynamics without conditional logic
 
 ### TEG Advantages Over Direct Modeling
@@ -85,6 +85,15 @@ if at_node and can_wait:
 # Multiple branches for movement vs. waiting
 # Special cases for restricted zones
 # Nested conditionals become intricate and error-prone
+
+# Critical complexity: capacity must be checked for the NEXT turn, not current
+# For vertices: check capacity of destination hub at time t+1
+if hub_capacity[destination][t + 1] > current_drones[destination][t + 1]:
+    allow_move()
+# For edges: check if connection will be available at time t (departure time)
+if edge_usage[connection][t] < edge_capacity[connection]:
+    allow_traversal()
+# This temporal offset logic is error-prone and must be manually tracked
 ```
 
 **With TEG** (clean approach):
@@ -93,7 +102,15 @@ if at_node and can_wait:
 for edge in adjacency[current_node]:
     if edge.is_traversable():
         consider_path(edge.target)
+# Capacity checks are automatic: edge.target already represents (hub, t+1)
+# No manual time offset calculations needed
 ```
+
+The key insight is that **without TEG**, you must manually verify capacity constraints at the **next time step** rather than the current one:
+- **Vertex capacity**: When moving to hub H, you need `capacity(H, t+1)`, not `capacity(H, t)`
+- **Edge capacity**: When traversing connection C at time t, you check `usage(C, t)` against its limit
+
+With TEG, this complexity vanishes because nodes already encode time. When you check `edge.target.can_enter()`, you're automatically checking the capacity at the correct future time step—the temporal dimension is built into the graph structure itself.
 
 **Benefits realized**:
 - ✅ **Elimination of intricate nested conditionals**: All actions (wait, move, traverse restricted) are uniform edges
@@ -106,7 +123,7 @@ for edge in adjacency[current_node]:
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.1+
 - pip
 
 ### Installation
