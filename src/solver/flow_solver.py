@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple
 from src.solver.models import TimeNode, TimeEdge, EdgeTracker
 from src.solver.time_graph import TimeGraph
 from src.schemas.definitions import NodeCategory, ZoneType
+from src.schemas.drone import Drone
 
 
 class FlowSolver:
@@ -18,6 +19,7 @@ class FlowSolver:
         self.nb_drones = nb_drones
         self.tracker = EdgeTracker()
         self.drone_paths: Dict[int, List[TimeNode]] = {}
+        self.drones: Dict[int, Drone] = {}
 
     def _get_edge(
         self, source: TimeNode, target: TimeNode
@@ -141,6 +143,24 @@ class FlowSolver:
         for node in path:
             node.add_drone()
 
+    def _create_drones(self) -> None:
+        """Creates Drone objects from solved paths."""
+        for drone_id, path in self.drone_paths.items():
+            if not path:
+                continue
+
+            start_node = path[0]
+            positions: List[Tuple[int, int, int]] = [
+                (node.time, node.hub.x, node.hub.y) for node in path
+            ]
+
+            self.drones[drone_id] = Drone(
+                drone_id=drone_id,
+                start_x=start_node.hub.x,
+                start_y=start_node.hub.y,
+                path=positions,
+            )
+
     def solve_all_drones(self) -> Dict[int, List[TimeNode]]:
         """
         Solves paths for all drones sequentially,
@@ -157,46 +177,82 @@ class FlowSolver:
             else:
                 print(f"Drone {drone_id}: No valid path found!")
 
+        self._create_drones()
+
         return self.drone_paths
 
     def _get_connection_name(self, source_name: str, target_name: str) -> str:
         """Returns the connection name in format source-target."""
         return f"{source_name}-{target_name}"
 
-    def _is_in_flight_to_restricted(
-        self, drone_id: int, current_time: int
+    def _get_drone_movement_at_turn(
+        self, drone: Drone, path: List[TimeNode], turn: int
     ) -> Optional[str]:
         """
-        Check if drone is in flight toward a restricted zone.
-        Returns connection name if in flight, None otherwise.
+        Gets the movement string for a drone at a specific turn.
+        Updates drone position as a side effect.
         """
-        path = self.drone_paths.get(drone_id)
-        if not path:
+        if drone.delivered:
             return None
 
+        current_node: Optional[TimeNode] = None
+        next_node: Optional[TimeNode] = None
+
         for i, node in enumerate(path):
-            if i + 1 < len(path):
-                next_node = path[i + 1]
-                if (
-                    node.time < current_time
-                    and next_node.time > current_time
-                    and next_node.hub.zone == ZoneType.RESTRICTED
-                ):
-                    return self._get_connection_name(
-                        node.hub.name, next_node.hub.name
-                    )
+            if node.time == turn:
+                current_node = node
+                if i + 1 < len(path):
+                    next_node = path[i + 1]
+                break
+            elif node.time > turn:
+                if i > 0:
+                    prev_node = path[i - 1]
+                    if prev_node.time < turn < node.time:
+                        if node.hub.zone == ZoneType.RESTRICTED:
+                            connection = self._get_connection_name(
+                                prev_node.hub.name, node.hub.name
+                            )
+                            drone.in_flight_connection = connection
+                            drone.update_position(turn)
+                            return f"D{drone.id}-{connection}"
+                break
+
+        drone.in_flight_connection = None
+
+        if current_node is None:
+            return None
+
+        drone.update_position(turn)
+
+        if next_node and next_node.hub.name == current_node.hub.name:
+            return None
+
+        if next_node:
+            destination = next_node.hub.name
+
+            if next_node.hub.category == NodeCategory.END:
+                drone.delivered = True
+
+            if next_node.hub.zone == ZoneType.RESTRICTED:
+                connection = self._get_connection_name(
+                    current_node.hub.name, next_node.hub.name
+                )
+                return f"D{drone.id}-{connection}"
+            else:
+                return f"D{drone.id}-{destination}"
+
         return None
 
     def get_simulation_output(self) -> List[str]:
         """
         Generates the simulation output in the required format.
+        Updates drone positions during simulation.
         Returns a list of strings, one per turn.
         """
-        if not self.drone_paths:
+        if not self.drone_paths or not self.drones:
             return []
 
         output_lines: List[str] = []
-        delivered: set[int] = set()
 
         max_time = max(
             path[-1].time for path in self.drone_paths.values() if path
@@ -205,41 +261,13 @@ class FlowSolver:
         for t in range(max_time):
             movements: List[str] = []
 
-            for drone_id, path in sorted(self.drone_paths.items()):
-                if drone_id in delivered:
-                    continue
+            for drone_id in sorted(self.drones.keys()):
+                drone = self.drones[drone_id]
+                path = self.drone_paths.get(drone_id, [])
 
-                current_node = None
-                next_node = None
-
-                for i, node in enumerate(path):
-                    if node.time == t:
-                        current_node = node
-                        if i + 1 < len(path):
-                            next_node = path[i + 1]
-                        break
-
-                if current_node is None:
-                    in_flight = self._is_in_flight_to_restricted(drone_id, t)
-                    if in_flight:
-                        movements.append(f"D{drone_id}-{in_flight}")
-                    continue
-
-                if next_node and next_node.hub.name == current_node.hub.name:
-                    continue
-
-                if next_node:
-                    destination = next_node.hub.name
-                    if next_node.hub.zone == ZoneType.RESTRICTED:
-                        connection = self._get_connection_name(
-                            current_node.hub.name, next_node.hub.name
-                        )
-                        movements.append(f"D{drone_id}-{connection}")
-                    else:
-                        movements.append(f"D{drone_id}-{destination}")
-
-                    if next_node.hub.category == NodeCategory.END:
-                        delivered.add(drone_id)
+                movement = self._get_drone_movement_at_turn(drone, path, t)
+                if movement:
+                    movements.append(movement)
 
             if movements:
                 output_lines.append(" ".join(movements))
@@ -251,3 +279,7 @@ class FlowSolver:
         output = self.get_simulation_output()
         for line in output:
             print(line)
+
+    def get_drones(self) -> Dict[int, Drone]:
+        """Returns the dictionary of Drone objects."""
+        return self.drones

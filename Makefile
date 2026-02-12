@@ -1,16 +1,18 @@
 VENV_NAME = .venv
 PYTHON = $(VENV_NAME)/bin/python3
+PIP = $(PYTHON) -m pip
 REQ_FILE = requirements.txt
 
 all: install
 
 $(VENV_NAME):
 	python3 -m venv $(VENV_NAME)
+	# Es buena práctica actualizar pip inmediatamente después de crear el venv
+	$(PIP) install --upgrade pip
 
-install: $(VENV_NAME) $(REQ_FILE)
-	pip install --upgrade pip
-	pip install -r $(REQ_FILE)
-	pip install flake8 mypy pytest
+install: $(VENV_NAME)
+	$(PIP) install -r $(REQ_FILE)
+	$(PIP) install flake8 mypy pytest
 	@touch $(VENV_NAME)
 
 clean:
