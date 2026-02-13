@@ -1,5 +1,5 @@
 pydantic
-rich
 pytest
 mypy
 flake8
+pygame

@@ -54,7 +54,7 @@ Consider a simple network:
 
 **Original Graph:**
 
-![Example Graph](assets/eg_graph_colors.png)
+![Example Graph](assets/eg_graph_colors_horizontal.png)
 
 The problem with this static representation: How do we handle waiting? How do we represent that a drone might arrive at different nodes at different times? Standard graph algorithms don't naturally support temporal dynamics.
 
