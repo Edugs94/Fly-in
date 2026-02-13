@@ -5,7 +5,6 @@ from src.solver.flow_solver import FlowSolver
 from src.solver.time_estimator import estimate_max_time, has_path_to_end
 from src.schemas.simulation_map import SimulationMap
 
-
 def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python3 main_solver.py <map_file.txt>", file=sys.stderr)

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Any
+from src.schemas.hubs import Hub
 
 
 class SimulationMap(BaseModel):
@@ -7,5 +8,5 @@ class SimulationMap(BaseModel):
 
     nb_drones: int
 
-    hubs: dict[str, Any]
+    hubs: dict[str, Hub]
     connections: dict[str, Any]
