@@ -74,8 +74,6 @@ class CoordTransformer:
 
     def calculate_radius(self, simulation: SimulationMap) -> int:
         hubs = list(simulation.hubs.values())
-        if len(hubs) < 2:
-            return 30
 
         min_dist = float("inf")
         for i in range(len(hubs)):

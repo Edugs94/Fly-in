@@ -124,11 +124,20 @@ class AssetsManager:
 
     def get_background(self) -> pygame.Surface:
         """Returns the background image."""
-        return self.background
+        return self.background if self.background else pygame.Surface((self.window_width, self.window_height))
 
     def get_drone(self) -> pygame.Surface:
         """Returns the drone image."""
-        return self.drone
+        if self.drone:
+            return self.drone
+
+        radius = 10
+        diameter = radius * 2
+
+        error_control_surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+        pygame.draw.circle(error_control_surface, (255, 255, 255), (radius, radius), radius)
+
+        return error_control_surface
 
     def get_hub_sprite(self, color: str) -> pygame.Surface:
         """Returns the hub sprite for the specified color."""
@@ -138,18 +147,14 @@ class AssetsManager:
         """Returns all hub sprites."""
         return self.hub_sprites
 
-    def get_color_map(self) -> dict:
-        """Returns the color map."""
-        return self.color_map
-
     def get_star(self) -> pygame.Surface:
         """Returns the star image."""
-        return self.star
+        return self.star if self.star else pygame.Surface((10, 10))
 
     def get_forbidden(self) -> pygame.Surface:
         """Returns the forbidden image."""
-        return self.forbidden
+        return self.forbidden if self.forbidden else pygame.Surface((10, 10))
 
     def get_drone_jam(self) -> pygame.Surface:
         """Returns the drone jam image."""
-        return self.drone_jam
+        return self.drone_jam if self.drone_jam else pygame.Surface((10, 10))

@@ -5,12 +5,13 @@ from src.schemas.drone import Drone
 from src.schemas.definitions import ZoneType
 from src.visualization.assets_manager import AssetsManager
 from src.visualization.coord_transformer import CoordTransformer
+
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
-import pygame  # noqa: E402
+import pygame  # noqa
 
 
 class VisualSimulation:
-    """Handles the visual rendering of drone simulation."""
+    """Handles the visual rendering of simulation."""
 
     def __init__(
         self,
@@ -24,10 +25,9 @@ class VisualSimulation:
         self.current_turn = 0
         self.max_turn = len(output_lines)
 
-        # Animation state
-        self.animation_progress = 0.0  # 0.0 to 1.0
-        self.turn_duration_ms = 1000  # 1 second per turn
-        self.paused = False
+        self.animation_progress = 0.0
+        self.turn_duration_ms = 1000
+        self.simulation_ended_printed = False
 
     def run(self) -> None:
         """Main loop for visual simulation."""
@@ -41,49 +41,42 @@ class VisualSimulation:
         radius = transformer.calculate_radius(self.simulation)
 
         window = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Fly-in Drone Simulation")
+        pygame.display.set_caption("Fly-in")
 
         assets = AssetsManager(width, height, int(radius * 2))
         background = assets.get_background()
         drone_sprite = assets.get_drone()
         hub_sprites = assets.get_all_hub_sprites()
 
-        font = pygame.font.Font(None, 36)
+        font = pygame.font.Font(None, 52)
         small_font = pygame.font.Font(None, 24)
 
         clock = pygame.time.Clock()
         running = True
-        last_tick = pygame.time.get_ticks()
+        last_ms = pygame.time.get_ticks()
 
         while running:
-            current_tick = pygame.time.get_ticks()
-            delta_ms = current_tick - last_tick
-            last_tick = current_tick
+            current_ms = pygame.time.get_ticks()
+            delta_ms = current_ms - last_ms
+            last_ms = current_ms
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
 
-            # Update animation
-            if not self.paused and self.current_turn < self.max_turn:
-                self.animation_progress += delta_ms / self.turn_duration_ms
-                if self.animation_progress >= 1.0:
-                    self._print_turn_output()
-                    self._advance_turn()
+            self.animation_progress += delta_ms / self.turn_duration_ms
+            if self.animation_progress >= 1.0:
+                self._print_turn_output()
+                self._advance_turn()
 
-            # Draw
             window.blit(background, (0, 0))
 
-            # Draw connections
             self._draw_connections(window, transformer, radius)
-
-            # Draw hubs
             self._draw_hubs(window, transformer, hub_sprites, assets)
-
-            # Draw drones
             self._draw_drones(window, transformer, drone_sprite, radius)
-
-            # Draw UI
             self._draw_ui(window, font, small_font, width, height)
 
             pygame.display.flip()
@@ -97,34 +90,24 @@ class VisualSimulation:
             self.current_turn += 1
             self.animation_progress = 0.0
 
-    def _rewind_turn(self) -> None:
-        """Go back to previous turn."""
-        if self.current_turn > 0:
-            self.current_turn -= 1
-            self.animation_progress = 0.0
-
-    def _reset(self) -> None:
-        """Reset simulation to beginning."""
-        self.current_turn = 0
-        self.animation_progress = 0.0
-
     def _print_turn_output(self) -> None:
         """Print the output for current turn to terminal."""
         if self.current_turn < len(self.output_lines):
             print(self.output_lines[self.current_turn])
+        elif self.current_turn == len(self.output_lines) and not self.simulation_ended_printed:
+            print("Simulation has ended. Press 'Esc' to exit")
+            self.simulation_ended_printed = True
 
     def _get_interpolated_position(
         self, drone: Drone, transformer: CoordTransformer
     ) -> tuple:
         """Get drone position interpolated between turns."""
-        # Current turn position
+
         curr_x, curr_y = drone.get_position_at_turn(self.current_turn)
 
-        # Next turn position (for interpolation)
         next_turn = self.current_turn + 1
         next_x, next_y = drone.get_position_at_turn(next_turn)
 
-        # Interpolate based on animation progress
         interp_x = curr_x + (next_x - curr_x) * self.animation_progress
         interp_y = curr_y + (next_y - curr_y) * self.animation_progress
 
@@ -173,7 +156,6 @@ class VisualSimulation:
             rect = sprite.get_rect(center=(x, y))
             window.blit(sprite, rect)
 
-            # Zone indicators (same logic as game_main.py)
             hub_w, hub_h = rect.size
 
             if hub.zone == ZoneType.BLOCKED:
@@ -245,7 +227,6 @@ class VisualSimulation:
     ) -> None:
         """Draw all drones at their current positions."""
         for drone_id, drone in self.drones.items():
-            # Skip drones that have been delivered and finished
             if drone.delivered and len(drone.path) > 0:
                 last_turn = drone.path[-1][0]
                 if self.current_turn > last_turn:
@@ -253,9 +234,8 @@ class VisualSimulation:
 
             x, y = self._get_interpolated_position(drone, transformer)
 
-            # Scale drone sprite based on hub radius
             drone_size = int(radius * 1.2)
-            scaled_drone = pygame.transform.smoothscale(
+            scaled_drone = pygame.transform.scale(
                 drone_sprite, (drone_size, drone_size)
             )
             rect = scaled_drone.get_rect(center=(x, y))
@@ -270,10 +250,9 @@ class VisualSimulation:
         height: int,
     ) -> None:
         """Draw UI elements (turn counter, controls, current output)."""
-        # Turn counter
         turn_text = font.render(
-            f"Turn: {self.current_turn}/{self.max_turn}",
+            f"TURN: {self.current_turn}/{self.max_turn}",
             True,
-            (255, 255, 255),
+            (0, 0, 0),
         )
         window.blit(turn_text, (10, 10))
