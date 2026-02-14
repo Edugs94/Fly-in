@@ -1,15 +1,11 @@
 import os
 import math
-import sys
-from src.parser.file_parser import FileParser
 from src.schemas.simulation_map import SimulationMap
-from src.visualization.assets_manager import AssetsManager
-from src.schemas.definitions import ZoneType
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame  # noqa
 
-# TODO manage keyboard interrupt as non crash (Ctrl + C)
+
 class CoordTransformer:
     def __init__(self) -> None:
         self.ratio = 0

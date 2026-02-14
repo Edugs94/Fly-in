@@ -6,7 +6,6 @@ from src.solver.time_estimator import estimate_max_time
 from src.schemas.simulation_map import SimulationMap
 from src.visualization.visual_simulation import VisualSimulation
 
-# TODO manage crashes when Ctrl + C during program
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -35,6 +34,7 @@ def main() -> None:
         visual.run()
     except KeyboardInterrupt:
         print("\n[ERROR] Simulation interrupted")
+
 
 if __name__ == "__main__":
     main()

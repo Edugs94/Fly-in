@@ -56,12 +56,19 @@ class FlowSolver:
         }
         came_from: Dict[TimeNode, Optional[TimeNode]] = {start_node: None}
         pq: List[Tuple[Tuple[int, int], bool, int, TimeNode]] = [
-            ((0, -start_priority), start_node.hub.category != NodeCategory.START, id(start_node), start_node)
+            (
+                (0, -start_priority),
+                start_node.hub.category != NodeCategory.START,
+                id(start_node),
+                start_node,
+            )
         ]
         visited: set[TimeNode] = set()
 
         while pq:
-            (current_dist, neg_priority), _, _, current_node = heapq.heappop(pq)
+            (current_dist, neg_priority), _, _, current_node = heapq.heappop(
+                pq
+            )
             current_priority = -neg_priority
 
             if current_node in visited:

@@ -101,7 +101,10 @@ class VisualSimulation:
         """Print the output for current turn to terminal."""
         if self.current_turn < len(self.output_lines):
             print(self.output_lines[self.current_turn])
-        elif self.current_turn == len(self.output_lines) and not self.simulation_ended_printed:
+        elif (
+            self.current_turn == len(self.output_lines)
+            and not self.simulation_ended_printed
+        ):
             print("Simulation has ended. Press 'Esc' to exit")
             self.simulation_ended_printed = True
 

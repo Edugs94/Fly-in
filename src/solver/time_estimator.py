@@ -2,6 +2,7 @@ from collections import deque
 from src.schemas.simulation_map import SimulationMap
 from src.schemas.definitions import ZoneType, NodeCategory
 
+
 def estimate_min_path_length(simulation: SimulationMap) -> int:
     """
     Estimates minimum path length using BFS on static graph.
@@ -13,7 +14,8 @@ def estimate_min_path_length(simulation: SimulationMap) -> int:
         if hub.category == NodeCategory.START:
             start_hub = hub.name
     end_hubs = set(
-        name for name, hub in simulation.hubs.items()
+        name
+        for name, hub in simulation.hubs.items()
         if hub.category == NodeCategory.END
     )
 

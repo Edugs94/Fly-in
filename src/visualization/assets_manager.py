@@ -133,20 +133,28 @@ class AssetsManager:
 
     def get_background(self) -> pygame.Surface:
         """Returns the background image."""
-        return self.background if self.background else pygame.Surface((self.window_width, self.window_height))
+        return (
+            self.background
+            if self.background
+            else pygame.Surface((self.window_width, self.window_height))
+        )
 
     def get_drone(self, frame: int = 0) -> pygame.Surface:
         """Returns the drone image for the given frame (0-3)."""
         drones = [self.drone1, self.drone2, self.drone3, self.drone4]
         drone = drones[frame % 4]
-        
+
         if drone:
             return drone
 
         radius = 10
         diameter = radius * 2
-        error_control_surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
-        pygame.draw.circle(error_control_surface, (255, 255, 255), (radius, radius), radius)
+        error_control_surface = pygame.Surface(
+            (diameter, diameter), pygame.SRCALPHA
+        )
+        pygame.draw.circle(
+            error_control_surface, (255, 255, 255), (radius, radius), radius
+        )
         return error_control_surface
 
     def get_hub_sprite(self, color: str) -> pygame.Surface:
