@@ -10,7 +10,7 @@ from src.visualization.visual_simulation import VisualSimulation
 def main() -> None:
 
     if len(sys.argv) < 2:
-        map_file = "maps/easy/01_linear_path.txt"
+        map_file = "assets/map_sample.txt"
 
     elif len(sys.argv) == 2:
         map_file = sys.argv[1]

@@ -1,0 +1,78 @@
+# Mapa: The Dense Swarm (Balanced Compression)
+# Resolución: Optimizado para 1800x1350.
+# Estrategia:
+# - Eje Y moderadamente comprimido (400px - 950px) para focalizar la vista.
+# - Rutas complejas: Arco superior, Tubo central, Zig-Zag inferior con bloqueo.
+
+nb_drones: 20
+
+# --- BASES (Márgenes cómodos a los lados) ---
+start_hub: AlphaBase 200 675 [color=white]
+end_hub: OmegaPoint 1600 675 [color=yellow]
+
+# --- RUTA CENTRAL: El Tubo de Presión (Priority) ---
+# Línea recta en Y=675. Muy densa en X.
+# Es la ruta más rápida pero se satura al instante.
+hub: Core1 400 675 [zone=priority color=green max_drones=2]
+hub: Core2 550 675 [zone=priority color=green max_drones=1]
+hub: Core3 700 675 [zone=priority color=green max_drones=1]
+hub: Core4 850 675 [zone=priority color=green max_drones=1]
+hub: Core5 1000 675 [zone=priority color=green max_drones=1]
+hub: Core6 1150 675 [zone=priority color=green max_drones=1]
+hub: Core7 1300 675 [zone=priority color=green max_drones=2]
+hub: Core8 1450 675 [zone=priority color=green max_drones=2]
+
+# --- RUTA SUPERIOR: El Arco Aplanado (Normal) ---
+# Y varía entre 450 y 550.
+# Es un arco suave, no tan alto como el primero, pero separado del centro.
+hub: ArcA 400 550 [zone=normal color=cyan max_drones=4]
+hub: ArcB 700 450 [zone=normal color=cyan max_drones=4]
+hub: ArcC 1100 450 [zone=normal color=cyan max_drones=4]
+hub: ArcD 1400 550 [zone=normal color=cyan max_drones=4]
+
+# --- RUTA INFERIOR: El Valle Trampa (Restricted) ---
+# Y varía entre 800 y 950.
+# Zona lenta con un bloqueo en medio que obliga a rodear.
+hub: Deep1 400 800 [zone=restricted color=red]
+hub: Deep2 700 950 [zone=restricted color=red]
+hub: WallX 900 850 [zone=blocked color=gray]
+hub: Deep3 1100 950 [zone=restricted color=red]
+hub: Deep4 1400 800 [zone=restricted color=red]
+
+# ================= CONEXIONES =================
+
+# --- Salidas ---
+connection: AlphaBase-Core1 [max_link_capacity=2]
+connection: AlphaBase-ArcA
+connection: AlphaBase-Deep1
+
+# --- Central (Tubo) ---
+connection: Core1-Core2 [max_link_capacity=1]
+connection: Core2-Core3 [max_link_capacity=1]
+connection: Core3-Core4 [max_link_capacity=1]
+connection: Core4-Core5 [max_link_capacity=1]
+connection: Core5-Core6 [max_link_capacity=1]
+connection: Core6-Core7 [max_link_capacity=1]
+connection: Core7-Core8 [max_link_capacity=2]
+connection: Core8-OmegaPoint [max_link_capacity=3]
+
+# --- Superior (Arco) ---
+connection: ArcA-ArcB
+connection: ArcB-ArcC
+connection: ArcC-ArcD
+connection: ArcD-OmegaPoint
+
+# --- Inferior (Evasión del Muro) ---
+connection: Deep1-Deep2
+# Deep2 intenta ir a WallX pero está bloqueado, debe ir a Deep3
+connection: Deep2-Deep3
+connection: Deep3-Deep4
+connection: Deep4-OmegaPoint
+
+# --- Cruces (Cross-Links) ---
+# Permiten bajar o subir si la ruta actual es mala.
+# Conectan las rutas paralelas.
+connection: ArcA-Core2
+connection: Core2-Deep1
+connection: ArcC-Core6
+connection: Deep3-Core7

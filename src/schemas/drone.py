@@ -28,7 +28,6 @@ class Drone:
         if not self.path:
             return (self.x, self.y)
 
-        # If turn is past the last position, return final position
         last_t, last_x, last_y = self.path[-1]
         if turn >= last_t:
             return (float(last_x), float(last_y))

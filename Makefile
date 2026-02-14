@@ -2,6 +2,7 @@ VENV_NAME = .venv
 PYTHON = $(VENV_NAME)/bin/python3
 PIP = $(PYTHON) -m pip
 REQ_FILE = requirements.txt
+MAIN_FILE = fly-in.py
 
 .PHONY: all install run debug clean lint lint-strict
 
@@ -17,18 +18,18 @@ install: $(VENV_NAME)
 	@touch $(VENV_NAME)
 
 run: $(VENV_NAME)
-	$(PYTHON) fly-in.py
+	$(PYTHON) $(MAIN_FILE)
 
 debug: $(VENV_NAME)
-	$(PYTHON) -m pdb fly-in.py
+	$(PYTHON) -m pdb $(MAIN_FILE)
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	rm -rf .mypy_cache .pytest_cache $(VENV_NAME)
 
 lint: $(VENV_NAME)
-	$(PYTHON) -m flake8 .
-	$(PYTHON) -m mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	$(PYTHON) -m flake8 $(MAIN_FILE) src
+	$(PYTHON) -m mypy $(MAIN_FILE) src --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict: $(VENV_NAME)
 	$(PYTHON) -m flake8 .
