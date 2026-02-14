@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from src.schemas.simulation_map import SimulationMap
 from src.schemas.drone import Drone
 from src.schemas.definitions import ZoneType
@@ -101,16 +101,12 @@ class VisualSimulation:
         """Print the output for current turn to terminal."""
         if self.current_turn < len(self.output_lines):
             print(self.output_lines[self.current_turn])
-        elif (
-            self.current_turn == len(self.output_lines)
-            and not self.simulation_ended_printed
-        ):
-            print("Simulation has ended. Press 'Esc' to exit")
+        elif not self.simulation_ended_printed:
             self.simulation_ended_printed = True
 
     def _get_interpolated_position(
         self, drone: Drone, transformer: CoordTransformer
-    ) -> tuple:
+    ) -> Tuple[float, float]:
         """Get drone position interpolated between turns."""
 
         curr_x, curr_y = drone.get_position_at_turn(self.current_turn)

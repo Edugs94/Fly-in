@@ -83,7 +83,6 @@ if at_node and can_wait:
     if check_capacity(...):
         proceed()
 # Multiple branches for movement vs. waiting
-# Special cases for restricted zones
 # Nested conditionals become intricate and error-prone
 
 # Critical complexity: capacity must be checked for the NEXT turn, not current

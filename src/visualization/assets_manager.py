@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame  # noqa
@@ -12,20 +13,20 @@ class AssetsManager:
 
     def __init__(
         self, window_width: int, window_height: int, hub_diameter: int
-    ):
+    ) -> None:
         self.window_width = window_width
         self.window_height = window_height
         self.hub_diameter = hub_diameter
 
-        self.background = None
-        self.drone1 = None
-        self.drone2 = None
-        self.drone3 = None
-        self.drone4 = None
-        self.hub_sprites = {}
-        self.star = None
-        self.forbidden = None
-        self.drone_jam = None
+        self.background: Optional[pygame.Surface] = None
+        self.drone1: Optional[pygame.Surface] = None
+        self.drone2: Optional[pygame.Surface] = None
+        self.drone3: Optional[pygame.Surface] = None
+        self.drone4: Optional[pygame.Surface] = None
+        self.hub_sprites: dict[str, pygame.Surface] = {}
+        self.star: Optional[pygame.Surface] = None
+        self.forbidden: Optional[pygame.Surface] = None
+        self.drone_jam: Optional[pygame.Surface] = None
 
         self.color_map = {
             "red": (255, 50, 50),
@@ -78,7 +79,7 @@ class AssetsManager:
         colored_surface.fill(color, special_flags=pygame.BLEND_RGBA_MULT)
         return colored_surface
 
-    def _load_assets(self):
+    def _load_assets(self) -> None:
         """
         Loads and processes all game assets.
         """
@@ -159,9 +160,11 @@ class AssetsManager:
 
     def get_hub_sprite(self, color: str) -> pygame.Surface:
         """Returns the hub sprite for the specified color."""
-        return self.hub_sprites.get(color, self.hub_sprites["white"])
+        return self.hub_sprites.get(
+            color, self.hub_sprites.get("white", pygame.Surface((10, 10)))
+        )
 
-    def get_all_hub_sprites(self) -> dict:
+    def get_all_hub_sprites(self) -> dict[str, pygame.Surface]:
         """Returns all hub sprites."""
         return self.hub_sprites
 

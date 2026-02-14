@@ -1,5 +1,6 @@
 import os
 import math
+from typing import Tuple
 from src.schemas.simulation_map import SimulationMap
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
@@ -8,11 +9,11 @@ import pygame  # noqa
 
 class CoordTransformer:
     def __init__(self) -> None:
-        self.ratio = 0
-        self.x_corrector = 0
-        self.y_corrector = 0
-        self.x_offset = 0
-        self.y_offset = 0
+        self.ratio: float = 0.0
+        self.x_corrector: float = 0.0
+        self.y_corrector: float = 0.0
+        self.x_offset: float = 0.0
+        self.y_offset: float = 0.0
 
     def define_limits(
         self,
@@ -20,7 +21,7 @@ class CoordTransformer:
         width: int,
         height: int,
         padding: int = 100,
-    ):
+    ) -> None:
         max_x = float("-inf")
         max_y = float("-inf")
         min_x = float("inf")
@@ -57,13 +58,16 @@ class CoordTransformer:
         if self.ratio == float("inf"):
             self.ratio = 1.0
 
-        final_graph_width = map_width * self.ratio
-        final_graph_height = map_height * self.ratio
+        self.x_offset = (
+            padding + (available_width - map_width * self.ratio) / 2
+        )
+        self.y_offset = (
+            padding * 2 + (available_height - map_height * self.ratio) / 2
+        )
 
-        self.x_offset = (width - final_graph_width) / 2
-        self.y_offset = (height - final_graph_height) / 2
-
-    def transform(self, coordinate_x: int | float, coordinate_y: int | float):
+    def transform(
+        self, coordinate_x: int | float, coordinate_y: int | float
+    ) -> Tuple[float, float]:
         x = (coordinate_x - self.x_corrector) * self.ratio + self.x_offset
         y = (self.y_corrector - coordinate_y) * self.ratio + self.y_offset
         return x, y

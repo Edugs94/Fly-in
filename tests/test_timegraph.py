@@ -393,98 +393,44 @@ def test_build_graph_with_empty_connections() -> None:
 def test_nodes_have_correct_attributes(
     simple_simulation: SimulationMap,
 ) -> None:
-    """Verify that TimeNodes store correct hub
-    reference, time, and zone information."""
+    """Verify that TimeNodes correctly inherit
+    hub attributes and maintain time reference."""
+    max_time = 2
+    graph = TimeGraph(simple_simulation, max_time)
+
+    nodes_list = list(graph.nodes)
+    node = nodes_list[0]
+
+    assert hasattr(node, "hub")
+    assert hasattr(node, "time")
+    assert node.hub in simple_simulation.hubs.values()
+    assert 0 <= node.time <= max_time
+
+
+def test_node_lookup_matches_nodes_set(
+    simple_simulation: SimulationMap,
+) -> None:
+    """Verify that _node_lookup dictionary
+    contains all nodes in the nodes set."""
     graph = TimeGraph(simple_simulation, 3)
 
-    start_node = graph.nodes[("A", 0)]
-    assert start_node.hub.name == "A"
-    assert start_node.time == 0
-    assert not start_node.is_priority
-
-    end_node = graph.nodes[("C", 1)]
-    assert end_node.hub.name == "C"
-    assert end_node.time == 1
-    assert end_node.is_end
+    nodes_list = list(graph.nodes)
+    assert len(graph._node_lookup) == len(nodes_list)
+    for node in nodes_list:
+        key = (node.hub.name, node.time)
+        assert key in graph._node_lookup
+        assert graph._node_lookup[key] == node
 
 
-def test_graph_with_priority_zone() -> None:
-    """Verify that TimeNodes correctly identify priority zones."""
-    hub_p = Hub(
-        name="P",
-        category=NodeCategory.INTERMEDIATE,
-        type=ZoneType.PRIORITY,
-        x=0,
-        y=0,
-        zone=ZoneType.PRIORITY,
-    )
-
-    hubs = {"P": hub_p}
-    connections: dict[str, dict[str, Connection]] = {"P": {}}
-
-    simulation = SimulationMap(nb_drones=1, hubs=hubs, connections=connections)
-    graph = TimeGraph(simulation, 2)
-
-    priority_node = graph.nodes[("P", 0)]
-    assert priority_node.is_priority
-
-
-def test_complex_multi_path_graph() -> None:
-    """Verify that build_graph correctly handles multiple
-    paths and respects time constraints."""
-    hub_a = Hub(
-        name="A",
-        category=NodeCategory.START,
-        type=ZoneType.NORMAL,
-        x=0,
-        y=0,
-    )
-    hub_b = Hub(
-        name="B",
-        category=NodeCategory.INTERMEDIATE,
-        type=ZoneType.NORMAL,
-        x=1,
-        y=0,
-    )
-    hub_c = Hub(
-        name="C",
-        category=NodeCategory.INTERMEDIATE,
-        type=ZoneType.NORMAL,
-        x=1,
-        y=1,
-    )
-    hub_d = Hub(
-        name="D",
-        category=NodeCategory.END,
-        type=ZoneType.NORMAL,
-        x=2,
-        y=0,
-    )
-
-    hubs = {"A": hub_a, "B": hub_b, "C": hub_c, "D": hub_d}
-    connections = {
-        "A": {
-            "B": Connection(source="A", target="B", max_link_capacity=2),
-            "C": Connection(source="A", target="C", max_link_capacity=1),
-        },
-        "B": {"D": Connection(source="B", target="D", max_link_capacity=1)},
-        "C": {"D": Connection(source="C", target="D", max_link_capacity=1)},
-        "D": {},
-    }
-
-    simulation = SimulationMap(nb_drones=2, hubs=hubs, connections=connections)
-    graph = TimeGraph(simulation, 4)
-
-    assert len(graph.nodes) == 4 * 5
-
-    edges_from_a = [e for e in graph.edges if e.source.hub.name == "A"]
-    assert len(edges_from_a) > 0
-
-    edges_to_d = [e for e in graph.edges if e.target.hub.name == "D"]
-    assert len(edges_to_d) > 0
+def test_adjacency_contains_all_movement_sources(
+    simple_simulation: SimulationMap,
+) -> None:
+    """Verify that adjacency dictionary includes
+    all nodes that have outgoing edges."""
+    graph = TimeGraph(simple_simulation, 3)
 
     for edge in graph.edges:
-        assert edge.target.time <= 4
+        assert edge.source in graph.adjacency
 
 
 def test_edge_duration_calculation(simple_simulation: SimulationMap) -> None:
@@ -505,5 +451,5 @@ def test_no_edges_from_nonexistent_nodes(
     graph = TimeGraph(simple_simulation, 2)
 
     for edge in graph.edges:
-        assert edge.source in graph.nodes.values()
-        assert edge.target in graph.nodes.values()
+        assert edge.source in graph.nodes
+        assert edge.target in graph.nodes

@@ -1,4 +1,5 @@
 from collections import deque
+from typing import Optional
 from src.schemas.simulation_map import SimulationMap
 from src.schemas.definitions import ZoneType, NodeCategory
 
@@ -9,17 +10,21 @@ def estimate_min_path_length(simulation: SimulationMap) -> int:
     Accounts for restricted zones costing 2 turns.
     Returns -1 if no path available
     """
-    start_hub = None
+    start_hub: Optional[str] = None
     for hub in simulation.hubs.values():
         if hub.category == NodeCategory.START:
             start_hub = hub.name
+
+    if start_hub is None:
+        return -1
+
     end_hubs = set(
         name
         for name, hub in simulation.hubs.items()
         if hub.category == NodeCategory.END
     )
 
-    visited = {}
+    visited: dict[str, int] = {}
     queue = deque([(start_hub, 0)])
 
     while queue:
@@ -36,9 +41,12 @@ def estimate_min_path_length(simulation: SimulationMap) -> int:
         if current in simulation.connections:
             for neighbor in simulation.connections[current]:
                 if neighbor not in visited:
-                    hub = simulation.hubs.get(neighbor)
-                    if hub and hub.zone != ZoneType.BLOCKED:
-                        cost = 2 if hub.zone == ZoneType.RESTRICTED else 1
+                    hub_obj = simulation.hubs.get(neighbor)
+                    if (
+                        hub_obj is not None
+                        and hub_obj.zone != ZoneType.BLOCKED
+                    ):
+                        cost = 2 if hub_obj.zone == ZoneType.RESTRICTED else 1
                         queue.append((neighbor, cost_accumulated + cost))
 
     return -1

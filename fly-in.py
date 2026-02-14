@@ -8,11 +8,17 @@ from src.visualization.visual_simulation import VisualSimulation
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python3 main_visual.py <map_file.txt>", file=sys.stderr)
-        sys.exit(1)
 
-    map_file = sys.argv[1]
+    if len(sys.argv) < 2:
+        map_file = "maps/easy/01_linear_path.txt"
+
+    elif len(sys.argv) == 2:
+        map_file = sys.argv[1]
+
+    else:
+        print("[ERROR] Usage: python3 fly-in.py"
+              " <map_file.txt>", file=sys.stderr)
+        sys.exit(1)
 
     parser = FileParser()
     simulation: SimulationMap = parser.parse(map_file)
