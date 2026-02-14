@@ -84,8 +84,8 @@ class AssetsManager:
             background_raw, (self.window_width, self.window_height)
         )
 
-        drone_raw = pygame.image.load("assets/drone.png").convert_alpha()
-        self.drone = pygame.transform.scale(drone_raw, (60, 60))
+        drone_raw = pygame.image.load("assets/drone1.png").convert_alpha()
+        self.drone = pygame.transform.smoothscale(drone_raw, (500, 500))
 
         hub_raw = pygame.image.load("assets/hub.png").convert_alpha()
         hub_scaled = self._scale_with_aspect_ratio(hub_raw, self.hub_diameter)

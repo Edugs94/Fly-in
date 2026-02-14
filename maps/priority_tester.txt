@@ -1,12 +1,12 @@
 # Easy Level 1: Simple linear path
-nb_drones: 1
+nb_drones: 11
 
 start_hub: start 0 0 [color=green]
 hub: w1 2 0 [color=blue]
 hub: w2 3 0 [color=blue zone=priority]
 hub: w3 4 0 [color=blue zone=priority]
 hub: v1 0 1 [color=blue zone=priority]
-hub: v2 0 2 [color=blue zone=blocked]
+hub: v2 0 2 [color=blue]
 hub: v3 0 3 [color=blue]
 end_hub: goal 5 3 [color=red]
 

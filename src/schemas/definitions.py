@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 class ZoneType(str, Enum):
     """Allowed areas"""
     NORMAL = "normal"

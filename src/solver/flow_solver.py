@@ -54,14 +54,14 @@ class FlowSolver:
         best: Dict[TimeNode, Tuple[int, int]] = {
             start_node: (0, start_priority)
         }
-        parents: Dict[TimeNode, Optional[TimeNode]] = {start_node: None}
-        pq: List[Tuple[Tuple[int, int], int, TimeNode]] = [
-            ((0, -start_priority), id(start_node), start_node)
+        came_from: Dict[TimeNode, Optional[TimeNode]] = {start_node: None}
+        pq: List[Tuple[Tuple[int, int], bool, int, TimeNode]] = [
+            ((0, -start_priority), start_node.hub.category != NodeCategory.START, id(start_node), start_node)
         ]
         visited: set[TimeNode] = set()
 
         while pq:
-            (current_dist, neg_priority), _, current_node = heapq.heappop(pq)
+            (current_dist, neg_priority), _, _, current_node = heapq.heappop(pq)
             current_priority = -neg_priority
 
             if current_node in visited:
@@ -69,7 +69,7 @@ class FlowSolver:
             visited.add(current_node)
 
             if current_node.hub.category == NodeCategory.END:
-                path = self._reconstruct_path(parents, current_node)
+                path = self._reconstruct_path(came_from, current_node)
                 return path
 
             for edge in self.time_graph.adjacency.get(current_node, []):
@@ -81,11 +81,7 @@ class FlowSolver:
                 if not edge.is_traversable(self.tracker):
                     continue
 
-                is_start_at_zero = (
-                    neighbor.hub.category == NodeCategory.START
-                    and neighbor.time == 0
-                )
-                if not is_start_at_zero and not neighbor.can_enter():
+                if not neighbor.can_enter():
                     continue
 
                 new_dist = current_dist + edge.duration
@@ -93,6 +89,7 @@ class FlowSolver:
                     1 if neighbor.hub.zone == ZoneType.PRIORITY else 0
                 )
                 new_priority = current_priority + neighbor_priority
+                not_start = neighbor.hub.category != NodeCategory.START
 
                 current_best = best.get(neighbor)
                 new_cost = (new_dist, -new_priority)
@@ -104,23 +101,23 @@ class FlowSolver:
 
                 if best_cost is None or new_cost < best_cost:
                     best[neighbor] = (new_dist, new_priority)
-                    parents[neighbor] = current_node
+                    came_from[neighbor] = current_node
                     heapq.heappush(
                         pq,
-                        (new_cost, id(neighbor), neighbor),
+                        (new_cost, not_start, id(neighbor), neighbor),
                     )
 
         return None
 
     def _reconstruct_path(
-        self, parents: Dict[TimeNode, Optional[TimeNode]], end_node: TimeNode
+        self, came_from: Dict[TimeNode, Optional[TimeNode]], end_node: TimeNode
     ) -> List[TimeNode]:
         """Reconstructs the path from start to end."""
         path = []
         current: Optional[TimeNode] = end_node
         while current is not None:
             path.append(current)
-            current = parents.get(current)
+            current = came_from.get(current)
         path.reverse()
         return path
 

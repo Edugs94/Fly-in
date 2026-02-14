@@ -4,7 +4,7 @@ from src.schemas.simulation_map import SimulationMap
 from src.schemas.drone import Drone
 from src.schemas.definitions import ZoneType
 from src.visualization.assets_manager import AssetsManager
-from src.visualization.game_main import CoordTransformer
+from src.visualization.coord_transformer import CoordTransformer
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame  # noqa: E402
 
