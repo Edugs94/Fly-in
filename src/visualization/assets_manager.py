@@ -18,7 +18,10 @@ class AssetsManager:
         self.hub_diameter = hub_diameter
 
         self.background = None
-        self.drone = None
+        self.drone1 = None
+        self.drone2 = None
+        self.drone3 = None
+        self.drone4 = None
         self.hub_sprites = {}
         self.star = None
         self.forbidden = None
@@ -85,7 +88,13 @@ class AssetsManager:
         )
 
         drone_raw = pygame.image.load("assets/drone1.png").convert_alpha()
-        self.drone = pygame.transform.smoothscale(drone_raw, (500, 500))
+        self.drone1 = pygame.transform.smoothscale(drone_raw, (500, 500))
+        drone2_raw = pygame.image.load("assets/drone2.png").convert_alpha()
+        self.drone2 = pygame.transform.smoothscale(drone2_raw, (500, 500))
+        drone3_raw = pygame.image.load("assets/drone3.png").convert_alpha()
+        self.drone3 = pygame.transform.smoothscale(drone3_raw, (500, 500))
+        drone4_raw = pygame.image.load("assets/drone4.png").convert_alpha()
+        self.drone4 = pygame.transform.smoothscale(drone4_raw, (500, 500))
 
         hub_raw = pygame.image.load("assets/hub.png").convert_alpha()
         hub_scaled = self._scale_with_aspect_ratio(hub_raw, self.hub_diameter)
@@ -126,17 +135,18 @@ class AssetsManager:
         """Returns the background image."""
         return self.background if self.background else pygame.Surface((self.window_width, self.window_height))
 
-    def get_drone(self) -> pygame.Surface:
-        """Returns the drone image."""
-        if self.drone:
-            return self.drone
+    def get_drone(self, frame: int = 0) -> pygame.Surface:
+        """Returns the drone image for the given frame (0-3)."""
+        drones = [self.drone1, self.drone2, self.drone3, self.drone4]
+        drone = drones[frame % 4]
+        
+        if drone:
+            return drone
 
         radius = 10
         diameter = radius * 2
-
         error_control_surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
         pygame.draw.circle(error_control_surface, (255, 255, 255), (radius, radius), radius)
-
         return error_control_surface
 
     def get_hub_sprite(self, color: str) -> pygame.Surface:

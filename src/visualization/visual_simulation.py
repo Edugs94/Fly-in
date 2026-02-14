@@ -28,6 +28,9 @@ class VisualSimulation:
         self.animation_progress = 0.0
         self.turn_duration_ms = 1000
         self.simulation_ended_printed = False
+        self.drone_frame = 0
+        self.drone_frame_timer = 0.0
+        self.drone_frame_duration = 40
 
     def run(self) -> None:
         """Main loop for visual simulation."""
@@ -45,7 +48,6 @@ class VisualSimulation:
 
         assets = AssetsManager(width, height, int(radius * 2))
         background = assets.get_background()
-        drone_sprite = assets.get_drone()
         hub_sprites = assets.get_all_hub_sprites()
 
         font = pygame.font.Font(None, 52)
@@ -72,11 +74,16 @@ class VisualSimulation:
                 self._print_turn_output()
                 self._advance_turn()
 
+            self.drone_frame_timer += delta_ms
+            if self.drone_frame_timer >= self.drone_frame_duration:
+                self.drone_frame = (self.drone_frame + 1) % 4
+                self.drone_frame_timer = 0.0
+
             window.blit(background, (0, 0))
 
             self._draw_connections(window, transformer, radius)
             self._draw_hubs(window, transformer, hub_sprites, assets)
-            self._draw_drones(window, transformer, drone_sprite, radius)
+            self._draw_drones(window, transformer, assets, radius)
             self._draw_ui(window, font, small_font, width, height)
 
             pygame.display.flip()
@@ -222,10 +229,12 @@ class VisualSimulation:
         self,
         window: pygame.Surface,
         transformer: CoordTransformer,
-        drone_sprite: pygame.Surface,
+        assets: AssetsManager,
         radius: int,
     ) -> None:
         """Draw all drones at their current positions."""
+        drone_sprite = assets.get_drone(self.drone_frame)
+
         for drone_id, drone in self.drones.items():
             if drone.delivered and len(drone.path) > 0:
                 last_turn = drone.path[-1][0]
