@@ -23,7 +23,16 @@ class Drone:
         """
         Returns the drone position at a specific turn.
         If in-flight (between hubs), returns the midpoint.
+        If turn is past the last position, returns the final position.
         """
+        if not self.path:
+            return (self.x, self.y)
+
+        # If turn is past the last position, return final position
+        last_t, last_x, last_y = self.path[-1]
+        if turn >= last_t:
+            return (float(last_x), float(last_y))
+
         prev_pos: Optional[Tuple[int, int, int]] = None
 
         for t, x, y in self.path:

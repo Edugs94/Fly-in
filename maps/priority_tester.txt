@@ -6,14 +6,15 @@ hub: w1 2 0 [color=blue]
 hub: w2 3 0 [color=blue zone=priority]
 hub: w3 4 0 [color=blue zone=priority]
 hub: v1 0 1 [color=blue zone=priority]
-hub: v2 0 2 [color=blue]
+hub: v2 0 2 [color=blue zone=blocked]
 hub: v3 0 3 [color=blue]
-end_hub: goal 99 0 [color=red]
+end_hub: goal 5 3 [color=red]
 
 connection: start-w1
 connection: w1-w2
 connection: w2-w3
 connection: w3-goal
+connection: start-v1
 connection: v1-v2
 connection: v2-v3
 connection: v3-goal

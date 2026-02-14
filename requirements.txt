@@ -3,3 +3,4 @@ pytest
 mypy
 flake8
 pygame
+pyautogui

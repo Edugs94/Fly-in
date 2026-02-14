@@ -1,0 +1,155 @@
+import os
+
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
+import pygame  # noqa
+
+
+class AssetsManager:
+    """
+    Manages the loading and scaling of all game assets (images, sprites)
+    while maintaining aspect ratios.
+    """
+
+    def __init__(
+        self, window_width: int, window_height: int, hub_diameter: int
+    ):
+        self.window_width = window_width
+        self.window_height = window_height
+        self.hub_diameter = hub_diameter
+
+        self.background = None
+        self.drone = None
+        self.hub_sprites = {}
+        self.star = None
+        self.forbidden = None
+        self.drone_jam = None
+
+        self.color_map = {
+            "red": (255, 50, 50),
+            "green": (50, 255, 50),
+            "blue": (0, 150, 255),
+            "yellow": (255, 255, 0),
+            "white": (255, 255, 255),
+            "purple": (128, 0, 128),
+            "black": (45, 45, 45),
+            "brown": (165, 42, 42),
+            "orange": (255, 165, 0),
+            "maroon": (128, 0, 0),
+            "gold": (255, 215, 0),
+            "darkred": (139, 0, 0),
+            "violet": (238, 130, 238),
+            "crimson": (220, 20, 60),
+            "rainbow": (0, 0, 0),
+        }
+
+        self._load_assets()
+
+    @staticmethod
+    def _scale_with_aspect_ratio(
+        image: pygame.Surface, target_size: int
+    ) -> pygame.Surface:
+        """
+        Scales an image to fit within target_size
+        while maintaining aspect ratio.
+        """
+        width, height = image.get_size()
+        aspect_ratio = width / height
+
+        if aspect_ratio > 1:
+            new_width = target_size
+            new_height = int(target_size / aspect_ratio)
+        else:
+            new_height = target_size
+            new_width = int(target_size * aspect_ratio)
+
+        return pygame.transform.scale(image, (new_width, new_height))
+
+    @staticmethod
+    def _get_colored_surface(
+        surface: pygame.Surface, color: tuple
+    ) -> pygame.Surface:
+        """
+        Colors a white image with the specified color.
+        """
+        colored_surface = surface.copy()
+        colored_surface.fill(color, special_flags=pygame.BLEND_RGBA_MULT)
+        return colored_surface
+
+    def _load_assets(self):
+        """
+        Loads and processes all game assets.
+        """
+        background_raw = pygame.image.load("assets/background3.png").convert()
+        self.background = pygame.transform.scale(
+            background_raw, (self.window_width, self.window_height)
+        )
+
+        drone_raw = pygame.image.load("assets/drone.png").convert_alpha()
+        self.drone = pygame.transform.scale(drone_raw, (60, 60))
+
+        hub_raw = pygame.image.load("assets/hub.png").convert_alpha()
+        hub_scaled = self._scale_with_aspect_ratio(hub_raw, self.hub_diameter)
+
+        hub_rainbow_raw = pygame.image.load(
+            "assets/hub_rainbow.png"
+        ).convert_alpha()
+        hub_rainbow_scaled = self._scale_with_aspect_ratio(
+            hub_rainbow_raw, self.hub_diameter
+        )
+
+        star_raw = pygame.image.load("assets/star2.png").convert_alpha()
+        self.star = self._scale_with_aspect_ratio(star_raw, self.hub_diameter)
+
+        forbidden_raw = pygame.image.load(
+            "assets/forbidden.png"
+        ).convert_alpha()
+        self.forbidden = self._scale_with_aspect_ratio(
+            forbidden_raw, self.hub_diameter
+        )
+
+        drone_jam_raw = pygame.image.load(
+            "assets/drone_jam.png"
+        ).convert_alpha()
+        self.drone_jam = self._scale_with_aspect_ratio(
+            drone_jam_raw, self.hub_diameter
+        )
+
+        for color_name, rgb_value in self.color_map.items():
+            if color_name == "rainbow":
+                self.hub_sprites[color_name] = hub_rainbow_scaled
+            else:
+                self.hub_sprites[color_name] = self._get_colored_surface(
+                    hub_scaled, rgb_value
+                )
+
+    def get_background(self) -> pygame.Surface:
+        """Returns the background image."""
+        return self.background
+
+    def get_drone(self) -> pygame.Surface:
+        """Returns the drone image."""
+        return self.drone
+
+    def get_hub_sprite(self, color: str) -> pygame.Surface:
+        """Returns the hub sprite for the specified color."""
+        return self.hub_sprites.get(color, self.hub_sprites["white"])
+
+    def get_all_hub_sprites(self) -> dict:
+        """Returns all hub sprites."""
+        return self.hub_sprites
+
+    def get_color_map(self) -> dict:
+        """Returns the color map."""
+        return self.color_map
+
+    def get_star(self) -> pygame.Surface:
+        """Returns the star image."""
+        return self.star
+
+    def get_forbidden(self) -> pygame.Surface:
+        """Returns the forbidden image."""
+        return self.forbidden
+
+    def get_drone_jam(self) -> pygame.Surface:
+        """Returns the drone jam image."""
+        return self.drone_jam
