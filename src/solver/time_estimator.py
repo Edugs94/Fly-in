@@ -54,7 +54,7 @@ def estimate_max_time(simulation: SimulationMap) -> int:
     - Drone 2 arrives at: min_path + 1
     - Drone N arrives at: min_path + (N-1)
 
-    This is mathematically optimal and guarantees solution on first attempt.
+    This guarantees solution on first attempt.
     """
     min_path = estimate_min_path_length(simulation)
     if min_path <= 0:
