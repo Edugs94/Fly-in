@@ -102,6 +102,7 @@ class VisualSimulation:
         if self.current_turn < len(self.output_lines):
             print(self.output_lines[self.current_turn])
         elif not self.simulation_ended_printed:
+            print("Simulation ended. Press 'Esc' to exit")
             self.simulation_ended_printed = True
 
     def _get_interpolated_position(
