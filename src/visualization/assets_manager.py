@@ -83,7 +83,7 @@ class AssetsManager:
         """
         Loads and processes all game assets.
         """
-        background_raw = pygame.image.load("assets/background3.png").convert()
+        background_raw = pygame.image.load("assets/background.png").convert()
         self.background = pygame.transform.scale(
             background_raw, (self.window_width, self.window_height)
         )
