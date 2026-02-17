@@ -8,15 +8,22 @@ class EdgeTracker:
     """Tracks edge usage across time for capacity management."""
 
     def __init__(self) -> None:
-        self.edge_drones: dict[tuple[TimeEdge, int], int] = defaultdict(int)
+        self.edge_drones: dict[tuple[str, int], int] = defaultdict(int)
+
+    def _get_connection_key(self, edge: TimeEdge) -> str:
+        """Creates a normalized key that's the same for both directions."""
+        names = sorted([edge.source.hub.name, edge.target.hub.name])
+        return f"{names[0]}-{names[1]}"
 
     def get_current_drones(self, edge: TimeEdge, time: int) -> int:
         """Get current drone count on edge at specific time."""
-        return self.edge_drones[(edge, time)]
+        key = self._get_connection_key(edge)
+        return self.edge_drones[(key, time)]
 
     def add_drone(self, edge: TimeEdge, time: int) -> None:
         """Register a drone using the edge at specific time."""
-        self.edge_drones[(edge, time)] += 1
+        key = self._get_connection_key(edge)
+        self.edge_drones[(key, time)] += 1
 
 
 class TimeNode:
