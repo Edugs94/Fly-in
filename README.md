@@ -1,50 +1,52 @@
 # Fly-in: Multi-Drone Routing Solver
 
-An optimal routing system for multiple drones that uses a time-expanded graph (TEG) and a modified Dijkstra's algorithm to solve complex aerial logistics problems.
+An optimal routing system for multiple drones that uses a time-expanded graph (TEG) and a modified Dijkstra's algorithm to solve complex graph optimization problems.
+
+<img src="assets/demo.gif" alt="Example Graph" width="1000"/>
 
 ## 🎯 Overview
 
 Fly-in solves the problem of finding optimal routes for multiple drones from a starting point to a destination, respecting:
 
-- **Connection Capacities**: Limits on the number of drones that can use a link simultaneously
-- **Restricted Zones**: Areas that require 2 turns to traverse
-- **Priority Zones**: Nodes that maximize travel efficiency
+- **Connection Capacities**: Limits on the number of drones that can traverse a link simultaneously
 - **Hub Capacity Constraints**: Limits on drones at each node
+- **Restricted Zones**: Areas that require 2 turns to traverse (marked with drone jam icon 🔴)
+- **Priority Zones**: Nodes that maximize travel efficiency (marked with star icon ⭐)
 
-## ✨ Key Features
+## 🔀 Simulation Workflow
 
-### Time-Expanded Graph (TEG)
-The project leverages a **Time-Expanded Graph** to elegantly model the routing problem:
-- Transforms a static graph into a dynamic space-time representation
-- Each node is a tuple `(hub, time_step)` rather than just a hub
-- Connections become natural temporal dependencies
-- **Wait actions** are treated as regular edges, not special cases
+### 1. Robust Map Parsing & Validation
+Before the simulation begins, the project parses input files to ensure the integrity of the graph topology. This step prevents runtime crashes by validating:
 
-**Why TEG?**
-- **Unified Edge Model**: Waiting at a hub is just a self-loop edge from `(hub, t)` to `(hub, t+1)`, eliminating complex nested if-else logic
-- **Standard Graph Search**: Enables clean Dijkstra implementation without special waiting logic
-- **Transparent Capacity Handling**: Both movement and waiting respect capacity constraints uniformly
-- **Natural Time Representation**: Time is an explicit dimension, not implicit in algorithm logic
+* **Structural Integrity:** Ensures the existence of start/end hubs and valid drone counts.
+* **Logical Consistency:** Verifies that all connections link to existing zones and that no duplicate paths exist.
+* **Error Reporting:** If a configuration error is detected (e.g., syntax errors, invalid capacities), the program terminates immediately and displays a descriptive error message indicating the exact line number and cause of the failure.
 
-### Modified Dijkstra Algorithm
-- **Lexicographic Optimization**: Optimizes first by time (turns), then by priority (priority zones traversed)
-- **Sequential Multi-Drone Solving**: Solves for each drone sequentially while respecting already-consumed capacities
-- **Guaranteed Optimality**: Maximum time calculation ensures first-attempt success for all drones
+*(See **Map Configuration Guide** below for strict file syntax).*
 
-### Robust Map Validation
-- Type-safe file parsing with Pydantic validation
-- Path existence verification (START → END)
-- Automatic optimal time calculation
-- Comprehensive error reporting
+### 2. Multi-Objective Pathfinding (Modified Dijkstra)
+Once the map is validated, the core engine utilizes a **Modified Dijkstra Algorithm** to determine optimal routes:
+* **Primary Goal:** Minimize the total number of simulation turns.
+* **Secondary Goal:** In cases where multiple paths offer the same arrival time, the algorithm selects the route that traverses the maximum number of **Priority Zones** (indicated by ⭐).
 
-### Intelligent Output
-- **Normal Zones**: Simplified format `D1-destination`
-- **Restricted Zones**: Connection format `D1-source-destination`
-- **In-Flight Tracking**: Records drone movements between time steps
+### 3. Solved via Time-Expanded Graphs (TEG)
+To achieve a truly elegant and collision-free resolution, the system models the problem using **Time-Expanded Graphs** (detailed below).
+
+### 4. Dual Display Output
+The simulation provides real-time feedback through two synchronized channels:
+
+* **Standard Terminal Output:**
+    Strictly follows the required format for automated validation. Each simulation turn generates a line listing the movement of every active drone using the format:
+    `D<drone_id>-<zone_name>`
+    *(e.g., `D1-roof1 D2-corridorA`)*
+
+* **Graphical Visualization (Pygame):**
+    Simultaneously, a graphical window renders the simulation using **Pygame**. This allows for an intuitive visual verification of the routes, identifying congestion, and watching the drones traverse the graph in real-time.
+
 
 ## 📊 Understanding Time-Expanded Graphs
 
-### What is a TEG?
+### Leveraging Time-Expanded Graphs for Dynamic Pathfinding
 
 A Time-Expanded Graph replicates each node for every possible time step and connects them to form a graph that explicitly represents time as a dimension. This elegant technique eliminates the need for intricate conditional logic when handling waiting states—waiting is simply another edge in the graph, identical to movement edges.
 
@@ -54,9 +56,9 @@ Consider a simple network:
 
 **Original Graph:**
 
-![Example Graph](assets/eg_graph_colors_horizontal.png)
+<img src="assets/eg_graph_colors_horizontal.png" alt="Example Graph" width="400"/>
 
-The problem with this static representation: How do we handle waiting? How do we represent that a drone might arrive at different nodes at different times? Standard graph algorithms don't naturally support temporal dynamics.
+In a standard graph, before moving to any node, we must strictly check if the destination node or the connecting edge will reach their capacity limits in the next turn. Furthermore, modeling "wait" actions (staying at the current node) is difficult to manage, leading to complex code with deeply nested conditions that are fragile and error-prone.
 
 ### TEG Solution
 
@@ -77,319 +79,136 @@ Notice how:
 
 **Without TEG** (traditional approach):
 ```python
-# Complex logic for waiting
-if at_node and can_wait:
-    current_time += 1
-    if check_capacity(...):
-        proceed()
-# Multiple branches for movement vs. waiting
-# Nested conditionals become intricate and error-prone
+# Pathfinding requires manual time tracking at every step
+def find_path(start, goal, current_time):
+    for neighbor in graph[current_node]:
+        next_time = current_time + travel_time(neighbor)
 
-# Critical complexity: capacity must be checked for the NEXT turn, not current
-# For vertices: check capacity of destination hub at time t+1
-if hub_capacity[destination][t + 1] > current_drones[destination][t + 1]:
-    allow_move()
-# For edges: check if connection will be available at time t (departure time)
-if edge_usage[connection][t] < edge_capacity[connection]:
-    allow_traversal()
-# This temporal offset logic is error-prone and must be manually tracked
+        # Must manually check capacity at FUTURE time, not current
+        if hub_drones[neighbor][next_time] >= hub_capacity[neighbor]:
+            continue  # Hub will be full when we arrive
+
+        if edge_usage[current_node][neighbor][current_time] >= edge_capacity:
+            continue  # Edge occupied during departure
+
+        # Waiting requires completely separate logic branch
+        if should_wait(current_node, current_time):
+            # Recursive call with incremented time
+            find_path(start, goal, current_time + 1)
+
+        # Restricted zones need special duration handling
+        if is_restricted(neighbor):
+            next_time = current_time + 2  # Manual offset
+            # Must re-check capacities for new arrival time...
 ```
+
+The fundamental problem: **time is implicit**, forcing manual offset calculations everywhere. Every capacity check must reference `t+1` or `t+2` instead of the current state, and waiting/movement require different code paths.
 
 **With TEG** (clean approach):
 ```python
-# All transitions are edges - unified treatment
-for edge in adjacency[current_node]:
-    if edge.is_traversable():
-        consider_path(edge.target)
-# Capacity checks are automatic: edge.target already represents (hub, t+1)
-# No manual time offset calculations needed
+# Standard Dijkstra - time is encoded in the graph structure
+def find_path(start_node):  # start_node = (hub, t=0)
+    for edge in adjacency[current_node]:
+        if edge.is_traversable() and edge.target.can_enter():
+            consider_path(edge.target)
 ```
+That's it. No time arithmetic. No special cases.
+ - Waiting? It's an edge from (hub, t) → (hub, t+1)
+ - Movement? It's an edge from (hub_A, t) → (hub_B, t+1)
+ - Restricted zone? It's an edge from (hub_A, t) → (hub_B, t+2)
+ All three are structurally identical in the algorithm.
 
-The key insight is that **without TEG**, you must manually verify capacity constraints at the **next time step** rather than the current one:
-- **Vertex capacity**: When moving to hub H, you need `capacity(H, t+1)`, not `capacity(H, t)`
-- **Edge capacity**: When traversing connection C at time t, you check `usage(C, t)` against its limit
 
-With TEG, this complexity vanishes because nodes already encode time. When you check `edge.target.can_enter()`, you're automatically checking the capacity at the correct future time step—the temporal dimension is built into the graph structure itself.
+**Why this works**: Each node is `(hub, time)`, so `edge.target` already represents the destination at the correct future time. Capacity checks on `edge.target` automatically verify the right moment—no manual `t+1` offsets needed.
 
 **Benefits realized**:
-- ✅ **Elimination of intricate nested conditionals**: All actions (wait, move, traverse restricted) are uniform edges
-- ✅ **Waiting treated identically to movement**: No special handling of wait logic
-- ✅ **Capacity constraints applied uniformly**: Both edges and nodes enforce capacity through shared mechanism
-- ✅ **Restricted zones implicit in structure**: 2-turn zones automatically represented through graph connectivity
-- ✅ **Reusability of standard algorithms**: Dijkstra and other graph algorithms work unchanged
-- ✅ **Explicit time dimension**: Time evolution is clear and maintainable
+- **Elimination of intricate nested conditionals**: All actions (wait, move, traverse restricted) are uniform edges.
+- **Waiting treated identically to movement**: No special handling of wait logic. Wait is just one more field in graph
+- **Capacity constraints applied uniformly**: Both edges and nodes enforce capacity through shared mechanism.
+- **Restricted zones implicit in structure**: 2-turn zones automatically represented through graph connectivity.
+- **Reusability of standard algorithms**: Dijkstra and other graph algorithms work unchanged.
+- **Explicit time dimension**: Time evolution is clear and easy to manage.
+
+**Calculating Maximum Time Steps**
+With **max_time = min_path + (nb_drones - 1)**, even the most constrained **bottleneck (1-drone capacity)** has a guaranteed solution path. With those TimeNodes and TimeEdges created, the algorithm will be able to get a shortest path if possible.
+
+## 🎮 Pygame Visualization
+
+The simulation runs with **dual output**: terminal text for validation and a real-time Pygame window for visual feedback.
+
+### Visual Elements
+- **Hubs**: Rendered as sprites with zone indicators (⭐ for priority, 🚫 for blocked, 🔴 for restricted)
+- **Connections**: Blue lines linking connected hubs
+- **Drones**: Animated sprites that smoothly interpolate between positions each turn
+- **UI Overlay**: Current turn counter and simulation status
+
+### How It Works
+The `VisualSimulation` class coordinates the rendering loop to provide the mandatory visual feedback:
+
+1. **Turn-based progression**: Each turn lasts ~1 second with smooth drone animation.
+2. **Animated Drone Sprites**: Each drone utilizes a sequence of **4 unique sprites** that cycle through an animation loop. These frames are interpolated during flight to simulate propeller rotation and dynamic movement.
+3. **Synchronized output**: Terminal prints movement commands (e.g., `D1-hubA`) in exact sync with the visual transitions in the Pygame window.
+4. **Interpolated movement**: Drones animate smoothly between hub positions using linear interpolation (Lerp), ensuring they don't simply "teleport" between coordinates.
+5. **Auto-scaling**: The window and hub sprites adapt to the map dimensions and coordinates automatically, ensuring visibility even on complex graphs.
+
+Press `Esc` to exit the simulation at any time.
 
 ## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.1+
-- pip
 
 ### Installation
 
 ```bash
-# Clone repository
-git clone <repo-url>
-cd Fly-in
-
-# Create virtual environment (recommended)
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+make install
 ```
 
-### Basic Usage
+### Usage
 
+In case default map wants to be simulated:
 ```bash
-# Solve a map
-python3 main_solver.py maps/easy/01_linear_path.txt
-
-# Visualize the time-expanded graph structure
-python3 main_timegraph.py maps/easy/01_linear_path.txt
+make
 ```
 
-## 📄 Map File Format
-
-Maps are defined in `.txt` files with the following structure:
-
-```
-# METADATA
-NB_DRONES 2
-
-# HUBS: name type zone x y [max_drones]
-HUB start START NORMAL 0 0 5
-HUB waypoint1 INTERMEDIATE NORMAL 1 0 3
-HUB goal END NORMAL 2 0 2
-
-# CONNECTIONS: source target [capacity]
-CONNECTION start waypoint1 1
-CONNECTION waypoint1 goal 1
-```
-
-### Data Types
-
-**Zones (ZoneType)**:
-- `NORMAL`: Requires 1 turn to traverse
-- `RESTRICTED`: Requires 2 turns to traverse (automatically represented in TEG)
-- `PRIORITY`: Maximizes efficiency (preferred in tie-breaking)
-- `BLOCKED`: Excluded from graph
-
-**Categories (NodeCategory)**:
-- `START`: Initial point (all drones begin here)
-- `INTERMEDIATE`: Waypoint
-- `END`: Destination
-
-## 🏗️ Software Architecture
-
-### Core Components
-
-#### Parser (`src/parser/`)
-- **FileParser**: Main entry point for map validation
-- **Processors**: Specialized handlers for different data sections
-  - `HubProcessor`: Validates hub definitions
-  - `DroneProcessor`: Processes drone count
-  - `ConnectionProcessor`: Validates connections
-  - `BaseProcessor`: Common validation logic
-
-#### Data Models (`src/schemas/`)
-- **Pydantic-based** type validation
-- `Hub`: Location definition with capacity constraints
-- `Connection`: Link definition with bandwidth
-- `SimulationMap`: Complete map representation
-
-#### Solver Engine (`src/solver/`)
-
-**TimeGraph** (`time_graph.py`):
-- Auto-constructs upon instantiation
-- Builds nodes: one per (hub, time) pair
-- Creates edges:
-  - Movement edges: respect connection capacity
-  - Wait edges: respect hub capacity
-  - Restricted zones: automatically span 2 time steps
-- Builds adjacency dictionary for O(1) neighbor lookup
-
-**FlowSolver** (`flow_solver.py`):
-- Consumes pre-built TimeGraph
-- Implements modified Dijkstra for drone routing
-- Tracks edge and node usage via `EdgeTracker`
-- Generates simulation output
-
-**Supporting Models** (`models.py`):
-- `TimeNode`: (hub, time, drones_present)
-- `TimeEdge`: (source, target, capacity, usage)
-- `EdgeTracker`: Maintains usage statistics
-
-#### Utilities
-- `time_estimator.py`: Calculates optimal max_time = min_path_length + (nb_drones - 1)
-- `dijkstra.py`: Supporting search functions
-
-### Data Flow
-
-```
-Map File
-   ↓
-Parser → SimulationMap (validated)
-   ↓
-TimeGraph (auto-constructs)
-   ├─ Creates all (hub, t) nodes
-   ├─ Adds movement edges
-   ├─ Adds wait edges
-   └─ Builds adjacency dict
-   ↓
-FlowSolver
-   ├─ For each drone: Modified Dijkstra
-   ├─ Tracks reservations
-   └─ Generates output
-   ↓
-Output (turn-by-turn movements)
-```
-
-## 🎯 Algorithm Details
-
-### Modified Dijkstra with Priority
-
-```python
-cost = (time_steps, -priority_count)
-```
-
-- **Primary**: Minimize `time_steps` (turns to destination)
-- **Secondary**: Maximize `priority_count` (priority zones traversed)
-
-This lexicographic ordering ensures:
-1. All drones reach the goal as quickly as possible
-2. When multiple paths have equal time, prefer priority zones
-
-### Sequential Multi-Drone Resolution
-
-For each drone (1 to nb_drones):
-1. Find shortest path from START to END using modified Dijkstra
-2. Reserve all edges and nodes in the path (increment usage counters)
-3. Continue to next drone
-
-**Optimality Guarantee**: With max_time = min_path + (nb_drones - 1), even the most constrained bottleneck (1-drone capacity) has a guaranteed solution path.
-
-## 📈 Example Execution
-
-### Input: `maps/easy/01_linear_path.txt`
-
-```
-NB_DRONES 2
-
-HUB start START NORMAL 0 0
-HUB waypoint1 INTERMEDIATE NORMAL 1 0
-HUB waypoint2 INTERMEDIATE NORMAL 2 0
-HUB goal END NORMAL 3 0
-
-CONNECTION start waypoint1 1
-CONNECTION waypoint1 waypoint2 1
-CONNECTION waypoint2 goal 1
-```
-
-### Output
-
-```
-D1-waypoint1
-D1-waypoint2 D2-waypoint1
-D1-goal D2-waypoint2
-D2-goal
-```
-
-**Interpretation**:
-- **Turn 0 → 1**: Drone 1 moves to waypoint1
-- **Turn 1 → 2**: Drone 1 moves to waypoint2; Drone 2 moves to waypoint1
-- **Turn 2 → 3**: Drone 1 arrives at goal; Drone 2 moves to waypoint2
-- **Turn 3 → 4**: Drone 2 arrives at goal
-
-## 🧪 Testing
-
+With custom map:
 ```bash
-# Run all tests
-python3 -m pytest tests/ -v
-
-# Run only graph tests
-python3 -m pytest tests/test_timegraph.py -v
-
-# Run only parser tests
-python3 -m pytest tests/test_parsing.py -v
-
-# With coverage report
-python3 -m pytest tests/ --cov=src
+python3 fly-in.py <map_file>
 ```
 
-**Coverage**: 62 tests covering all core functionality
-
-## 🔍 Debugging Tools
-
-### Visualize Time-Expanded Graph
-
-```bash
-python3 main_timegraph.py maps/easy/01_linear_path.txt
+### Map Format: File Constraints (.txt)
 ```
+# 1. GLOBAL SETTINGS
+# ------------------------------------------------------------------
+# First Line  : Must be 'nb_drones: <number>' (positive integer).
+# Comments    : Lines starting with '#' are ignored.
 
-Shows:
-- Nodes at each time step
-- Movement and wait edges
-- Edge capacities and usage
+# 2. ZONE DEFINITIONS
+# ------------------------------------------------------------------
+# Prefixes    : Must define exactly one 'start_hub:', one 'end_hub:', and any number of 'hub:'.
+# Syntax      : <prefix> <name> <x> <y> [metadata]
+# Naming      : Unique names. Alphanumeric allowed. NO dashes (-) or spaces.
+# Coordinates : Unique numeric coordinates (x, y). No duplicates allowed
 
-### Automatic Map Validation
+# 3. ZONE METADATA (Optional, enclose in brackets [...])
+# ------------------------------------------------------------------
+# zone=       : normal (default), blocked, restricted, or priority.
+# color=      : Any single-word string (e.g., red, blue).
+# max_drones= : Positive integer (default: 1).
 
-The solver automatically:
-- Validates START → END path existence
-- Calculates optimal `max_time`
-- Rejects unsolvable maps with clear error messages
+# 4. CONNECTIONS
+# ------------------------------------------------------------------
+# Prefix      : 'connection:'
+# Syntax      : connection: <name1>-<name2> [metadata]
+# Logic       : - Must link previously defined zones.
+#               - No duplicate links allowed (a-b equals b-a).
+# Metadata    : [max_link_capacity=<number>] (default: 1).
+```
+_Examples attached on **maps/** as well as **assets/map_sample.txt**_
 
-## 📋 Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `pydantic` | Type-safe data validation |
-| `rich` | Colored CLI output |
-| `pytest` | Test framework |
-| `mypy` | Static type checking |
-| `flake8` | Code linting |
+## Testing
 
-## 🎓 Key Concepts
+Parsing and timegraph validations have been tracked though unit testing (pytest). Attached on **tests/** folder
 
-### Multi-Commodity Flow
-The problem is essentially a multi-commodity flow problem where each commodity is a drone with capacity constraints at nodes and edges.
+## 📚 Resources
 
-### Lexicographic Dijkstra
-Uses tuples for comparison: first time, then -priority. This enables simultaneous optimization of multiple objectives.
-
-### Greedy vs. Optimal
-Sequential drone-by-drone solving is optimal when the bottleneck capacity is 1-drone, which is guaranteed by the max_time calculation.
-
-## 📊 Map Difficulty Levels
-
-### Easy
-- Linear or simple branching flows
-- Ample capacities
-- Minimal restricted zones
-
-### Medium
-- Loops and deadlock traps
-- Priority zones
-- Critical route optimization
-
-### Hard
-- Multiple constraint layers
-- Critical bottlenecks
-- Combined challenges
-
-### Challenger
-- Maximum complexity
-- Requires perfect algorithm
-- Extreme validation
-
-## 📝 References
-
-- **Dijkstra's Algorithm**: Shortest path computation
-- **Time-Expanded Networks**: Standard in flow and scheduling theory
-- **Multi-Commodity Flow**: Optimization with multiple resources
-- **Lexicographic Optimization**: Multi-objective optimization
-
----
-
-**Last Updated**: February 2026
+### References
+* [How Dijkstra's Algorithm Works](https://youtu.be/EFg3u_E6eHU?si=8rnVVytmCJ9JGVWz) by Spanning Tree
