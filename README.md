@@ -22,7 +22,7 @@ Before the simulation begins, the project parses input files to ensure the integ
 * **Logical Consistency:** Verifies that all connections link to existing zones and that no duplicate paths exist.
 * **Error Reporting:** If a configuration error is detected (e.g., syntax errors, invalid capacities), the program terminates immediately and displays a descriptive error message indicating the exact line number and cause of the failure.
 
-*(See **Map Configuration Guide** below for strict file syntax).*
+*(See **Map Format** section below for strict file syntax).*
 
 ### 2. Multi-Objective Pathfinding (Modified Dijkstra)
 Once the map is validated, the core engine utilizes a **Modified Dijkstra Algorithm** to determine optimal routes:
