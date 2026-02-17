@@ -44,7 +44,7 @@ The simulation provides real-time feedback through two synchronized channels:
     Simultaneously, a graphical window renders the simulation using **Pygame**. This allows for an intuitive visual verification of the routes, identifying congestion, and watching the drones traverse the graph in real-time.
 
 
-## 📊 Understanding Time-Expanded Graphs
+## 🧩 Understanding Time-Expanded Graphs
 
 ### Leveraging Time-Expanded Graphs for Dynamic Pathfinding
 
