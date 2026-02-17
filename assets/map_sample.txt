@@ -1,75 +1,61 @@
-# Map: The Dense Swarm
-# - Complex routes: Upper Arc, Central Tube, Lower Zig-Zag with blockage.
+# Map: The Convergent Paths
+# - Short blocked route through the center
+# - Long route that splits into two: priority-heavy and restricted
+# - Both branches reunite before reaching the goal
 
-nb_drones: 20
+nb_drones: 8
 
-# --- BASES (Comfortable margins on the sides) ---
-start_hub: AlphaBase 200 675 [color=white]
-end_hub: OmegaPoint 1600 675 [color=yellow]
+# --- BASES ---
+start_hub: Starting 150 600 [color=rainbow]
 
-# --- CENTRAL ROUTE: The Pressure Tube (Priority) ---
-# Straight line at Y=675. Very dense in X.
-# It is the fastest route but saturates instantly.
-hub: Core1 400 675 [zone=priority color=green max_drones=2]
-hub: Core2 550 675 [zone=priority color=green max_drones=1]
-hub: Core3 700 675 [zone=priority color=green max_drones=1]
-hub: Core4 850 675 [zone=priority color=green max_drones=1]
-hub: Core5 1000 675 [zone=priority color=green max_drones=1]
-hub: Core6 1150 675 [zone=priority color=green max_drones=1]
-hub: Core7 1300 675 [zone=priority color=green max_drones=2]
-hub: Core8 1450 675 [zone=priority color=green max_drones=2]
+# MID ROUTE
+# Direct but blocked - cannot be used
+hub: mid1 400 600 [zone=normal color=green max_drones=1]
+hub: mid2 800 600 [zone=blocked color=yellow]
+hub: mid3 1300 600 [zone=priority color=green]
+# LOW ROUTE
+# Higher speed, more priority zones, same number of hops
+hub: low1 400 400 [zone=priority color=green max_drones=4]
+hub: low2 700 350 [zone=restricted color=yellow max_drones=4]
+hub: low3 1000 350 [zone=priority color=green max_drones=4]
+hub: low4 1300 400 [zone=priority color=green max_drones=4]
 
-# --- UPPER ROUTE: The Flattened Arc (Normal) ---
-# Y varies between 450 and 550.
-# It is a smooth arc, not as high as the first one, but separated from the center.
-hub: ArcA 400 550 [zone=normal color=cyan max_drones=4]
-hub: ArcB 700 450 [zone=normal color=cyan max_drones=4]
-hub: ArcC 1100 450 [zone=normal color=cyan max_drones=4]
-hub: ArcD 1400 550 [zone=normal color=cyan max_drones=4]
+# UPPER ROUTE
+# Slower zone with restricted capacity, same number of hops
+hub: upper1 470 800 [zone=restricted color=yellow max_drones=2]
+hub: upper2 700 850 [zone=priority color=green max_drones=2]
+hub: upper3 1000 850 [zone=restricted color=yellow max_drones=2]
+hub: upper4 1300 800 [zone=restricted color=yellow max_drones=2]
 
-# --- LOWER ROUTE: The Trap Valley (Restricted) ---
-# Y varies between 800 and 950.
-# Slow zone with a blockage in the middle that forces a detour.
-hub: Deep1 400 800 [zone=restricted color=red]
-hub: Deep2 700 950 [zone=restricted color=red]
-hub: WallX 900 850 [zone=blocked color=gray]
-hub: Deep3 1100 950 [zone=restricted color=red]
-hub: Deep4 1400 800 [zone=restricted color=red]
+# --- CONVERGENCE HUB ---
+# Where both branches meet before the goal
+end_hub: End_Hub 1500 600 [zone=normal color=rainbow]
 
 # ================= CONNECTIONS =================
 
-# --- Exits ---
-connection: AlphaBase-Core1 [max_link_capacity=2]
-connection: AlphaBase-ArcA
-connection: AlphaBase-Deep1
+# --- Initial Split: Short Blocked vs Long Viable ---
+connection: Starting-mid1
+connection: Starting-low1
+connection: Starting-upper1
 
-# --- Central (Tube) ---
-connection: Core1-Core2 [max_link_capacity=1]
-connection: Core2-Core3 [max_link_capacity=1]
-connection: Core3-Core4 [max_link_capacity=1]
-connection: Core4-Core5 [max_link_capacity=1]
-connection: Core5-Core6 [max_link_capacity=1]
-connection: Core6-Core7 [max_link_capacity=1]
-connection: Core7-Core8 [max_link_capacity=2]
-connection: Core8-OmegaPoint [max_link_capacity=3]
+# MID ROUTE
+connection: mid1-mid2
+connection: mid2-mid3
+connection: mid3-End_Hub
 
-# --- Upper (Arc) ---
-connection: ArcA-ArcB
-connection: ArcB-ArcC
-connection: ArcC-ArcD
-connection: ArcD-OmegaPoint
+# LOWER ROUTE
+connection: low1-low2 [max_link_capacity=3]
+connection: low2-low3 [max_link_capacity=3]
+connection: low3-low4 [max_link_capacity=3]
+connection: low4-End_Hub
 
-# --- Lower (Wall Evasion) ---
-connection: Deep1-Deep2
-# Deep2 tries to go to WallX but is blocked, must go to Deep3
-connection: Deep2-Deep3
-connection: Deep3-Deep4
-connection: Deep4-OmegaPoint
+# UPPER ROUTE
+connection: upper1-upper2
+connection: upper2-upper3
+connection: upper3-upper4
+connection: upper4-End_Hub
 
-# --- Crossings (Cross-Links) ---
-# Allow going down or up if the current route is bad.
-# Connect the parallel routes.
-connection: ArcA-Core2
-connection: Core2-Deep1
-connection: ArcC-Core6
-connection: Deep3-Core7
+connection: upper3-mid3
+connection: mid2-low1
+connection: mid1-upper1
+connection: mid2-low4
