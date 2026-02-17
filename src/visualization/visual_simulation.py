@@ -264,4 +264,4 @@ class VisualSimulation:
             True,
             (252, 247, 247),
         )
-        window.blit(turn_text, (10, 10))
+        window.blit(turn_text, (30, 190))
