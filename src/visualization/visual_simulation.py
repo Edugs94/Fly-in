@@ -144,7 +144,7 @@ class VisualSimulation:
                             (100, 180, 255),
                             (x1, y1),
                             (x2, y2),
-                            radius // 4,
+                            radius // 7,
                         )
 
     def _draw_hubs(
