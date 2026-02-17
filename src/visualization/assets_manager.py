@@ -66,7 +66,7 @@ class AssetsManager:
             new_height = target_size
             new_width = int(target_size * aspect_ratio)
 
-        return pygame.transform.scale(image, (new_width, new_height))
+        return pygame.transform.smoothscale(image, (new_width, new_height))
 
     @staticmethod
     def _get_colored_surface(
