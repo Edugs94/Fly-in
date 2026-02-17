@@ -262,6 +262,6 @@ class VisualSimulation:
         turn_text = font.render(
             f"TURN: {self.current_turn}/{self.max_turn}",
             True,
-            (0, 0, 0),
+            (252, 247, 247),
         )
         window.blit(turn_text, (10, 10))
