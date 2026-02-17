@@ -151,7 +151,9 @@ def test_build_graph_creates_all_nodes(
 
     for hub_name in ["A", "B", "C"]:
         for t in range(max_time + 1):
-            assert (hub_name, t) in graph.nodes
+            node = graph.get_node(hub_name, t)
+            assert node is not None
+            assert node in graph.nodes
 
 
 def test_build_graph_excludes_blocked_hubs(
@@ -162,9 +164,9 @@ def test_build_graph_excludes_blocked_hubs(
     graph = TimeGraph(blocked_simulation, max_time)
 
     for t in range(max_time + 1):
-        assert ("A", t) in graph.nodes
-        assert ("C", t) in graph.nodes
-        assert ("BLOCKED", t) not in graph.nodes
+        assert graph.get_node("A", t) is not None
+        assert graph.get_node("C", t) is not None
+        assert graph.get_node("BLOCKED", t) is None
 
 
 def test_travel_time_normal_zone(simple_simulation: SimulationMap) -> None:
@@ -384,7 +386,9 @@ def test_build_graph_with_empty_connections() -> None:
     graph = TimeGraph(simulation, 3)
 
     for t in range(4):
-        assert ("A", t) in graph.nodes
+        node = graph.get_node("A", t)
+        assert node is not None
+        assert node in graph.nodes
 
     wait_edges = [e for e in graph.edges if e.source.hub.name == "A"]
     assert len(wait_edges) == 3
