@@ -30,7 +30,7 @@ class VisualSimulation:
         self.simulation_ended_printed = False
         self.drone_frame = 0
         self.drone_frame_timer = 0.0
-        self.drone_frame_duration = 40
+        self.drone_frame_duration = 20
 
     def run(self) -> None:
         """Main loop for visual simulation."""
@@ -144,7 +144,7 @@ class VisualSimulation:
                             (100, 180, 255),
                             (x1, y1),
                             (x2, y2),
-                            radius // 7,
+                            radius // 12,
                         )
 
     def _draw_hubs(

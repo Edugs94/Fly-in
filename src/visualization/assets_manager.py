@@ -29,10 +29,10 @@ class AssetsManager:
         self.drone_jam: Optional[pygame.Surface] = None
 
         self.color_map = {
-            "red": (255, 50, 50),
-            "green": (50, 255, 50),
-            "blue": (0, 150, 255),
-            "yellow": (255, 255, 0),
+            "red": (231, 69, 54),
+            "green": (53, 167, 82),
+            "blue": (30, 116, 231),
+            "yellow": (248, 187, 6),
             "white": (255, 255, 255),
             "purple": (128, 0, 128),
             "black": (45, 45, 45),
